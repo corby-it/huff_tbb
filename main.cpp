@@ -1,13 +1,29 @@
 #include <iostream>
+#include <cmath>
 
-using namespace std;
+#include "tbb/tbb.h"
 
-int main () {
-	
-	cout << "Hello World! Bye Bye Moon!" << endl;
-	cout << "Hello Moon! Bye Bye World!" << endl;
-	
-	// primo commento utilissimo
+double *output;
+double *input;
 
-	return 3;
+
+int main() {
+
+    const int size = 20000000;
+
+    output = new double[size];
+    input = new double[size];
+   
+    for(int i = 0; i < size; i++) {
+        input[i] = i;
+    }
+      
+    tbb::parallel_for(0, size, 1, [=](int i) {
+
+        output[i] = sqrt(sin(input[i])*sin(input[i]) + cos(input[i])*cos(input[i]));
+            
+   });
+    delete[] input;
+    delete[] output;
+    return 0;
 }
