@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "dirent.h"
-#include "dirent.cpp"
 #include "cmd_line_interface.h"
 
 using namespace std;
