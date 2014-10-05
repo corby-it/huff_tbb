@@ -9,7 +9,7 @@ double *input;
 
 int main() {
 
-    const int size = 20000000;
+    const int size = 90000000;
 
     output = new double[size];
     input = new double[size];
