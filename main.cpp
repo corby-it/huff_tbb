@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <string>
 #include "bitreader.h"
+#include "bitwriter.h"
+#include "cmd_line_interface.h"
 
 using namespace std;
 
@@ -68,15 +70,39 @@ bool depth_compare(pair<unsigned,uint8_t> first, pair<unsigned,uint8_t> second){
 }
 
 int main (int argc, char *argv[]) {
-	if (argc!=3) {
-		cout << "Syntax error:\n\n";
-		cout << "stat <input-file> <output-file>\n";
-		return -1;
+
+
+	/*
+	Come provare se funziona:
+		Compressione -> huffman_tbb.exe -c prova.txt
+						oppure huffman_tbb.exe --compress prova.txt
+		Decompressione -> huffman_tbb.exe -d prova.bcp
+						oppure huffman_tbb.exe --decompress prova.bcp,
+
+	In teoria dovrebbe dare errore se si sbagliano i parametri, se il file di input non esiste,
+	se ci sono troppi pochi argomenti ecc ecc 
+	*/
+	CMDLineInterface shell(argc, argv);
+
+
+	int code = shell.verify_inputs();
+	if(code < 0){
+		shell.error_message(code);
+		exit(1);
 	}
 
-	huffman_compress(argv[1], argv[2]);
+	
+	if(!shell.get_mode().compare("compression"))
+		//cout << "COMPRESS!" << endl;
+		huffman_compress("prova.txt", "prova.bcp");
+	else
+		//cout << "DECOMPRESS!" << endl;
+		huffman_decompress("prova.bcp", "prova.txt");
 
-	huffman_decompress(argv[2], argv[1]);
+
+	exit(0);
+
+
 }
 
 void huffman_compress(string in_file, string out_file){
@@ -168,7 +194,7 @@ void huffman_compress(string in_file, string out_file){
 	cout << "scrittura su file...\n";
 
 	// crea il file di output
-	bitwriter btw(out_f);
+	BitWriter btw(out_f);
 	uint8_t tmp;
 
 	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
@@ -215,9 +241,9 @@ void huffman_decompress(string in_file, string out_file){
 	// apro i file
 	ifstream in_f(in_file, ifstream::in|ifstream::binary);
 	ofstream out_f(out_file, fstream::out|fstream::binary);
-
-	bitreader btr(in_f);
-	bitwriter btw(out_f);
+	
+	BitReader btr(in_f);
+	BitWriter btw(out_f);
 	
 	// leggo il magic number
 	uint32_t magic_number = btr.read(32);
@@ -271,7 +297,6 @@ void huffman_decompress(string in_file, string out_file){
 	in_f.close();
 	out_f.close();
 
-	system("pause");
 }
 
 void depth_assign(huff_node* root, vector<pair<unsigned,uint8_t>> & depthmap){

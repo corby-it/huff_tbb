@@ -1,6 +1,6 @@
 #include <array>
 #include <iostream>
-
+#include <algorithm> //std::find
 #include "dirent.h"
 #include "cmd_line_interface.h"
 
@@ -13,7 +13,7 @@ CMDLineInterface::CMDLineInterface( int argc, char** argv){
 }
 
 
-
+// Input validation: chi si ricorda di Bobby Tables?
 int CMDLineInterface::verify_inputs() {
 
 	if( (check_par_consistency()) < 0)
@@ -36,27 +36,15 @@ void CMDLineInterface::init(){
 
 
 
-// Stampa su console la sintassi del programma
-void CMDLineInterface::error_message(int code){
-	switch (code) {
-	case ARGC_ERROR:
-		cout << "Error: parameters and files needed!" << endl;
-	case PAR_ERROR:
-		cout << "Looks like you made some syntax error." << endl;
-		cout << "	Use: huffman_tbb.exe <mode> [options] <file>" << endl;
-		cout << "	<mode>: -c (--compress), -d (--decompress)" << endl;
-		cout << "	[options]: -p (--parallel), -t (--timer), -v (--verbose)" << endl;
-		cout << "	<file>: filename1 filename2 ... filenameN" << endl;
-		break;
-	case FILE_ERROR:
-		cout << "Looks like you gave in input some non-existent file." << endl;
-		cout << "Please check you input files again!" << endl;
-		break;
-	default:
-		break;
-	}
-}
 
+
+string CMDLineInterface::get_mode(){
+	if ( any_of(par_vector.begin(), par_vector.end(),
+		[](string s){return ( !s.compare("-c") || !s.compare("--compress"));}) )  
+		return "compression";
+
+	return "decompression";
+}
 
 
 // Check parameters consistency
@@ -70,6 +58,12 @@ int CMDLineInterface::check_par_consistency() {
 	for (vector<string>::iterator it = par_vector.begin(); it != par_vector.end(); ++it)
 		if(allowed_parameters.find (*it)==allowed_parameters.end())
 			return PAR_ERROR;
+
+	// Check if at least one between compression and decompression has been chosen
+	if ( none_of(par_vector.begin(), par_vector.end(),[](string s){
+		return (!s.compare("-c") || !s.compare("--compress") || !s.compare("-d") || !s.compare("--decompress"));
+	}) )
+		return MODE_ERROR;
 
 	return 1;
 }
@@ -121,7 +115,6 @@ int CMDLineInterface::check_file_existence() {
 }
 
 
-
 // Separa i parametri dai file in input (supponendo non ci siano file che iniziano con '-')
 void CMDLineInterface::separate_par_from_files(int argc, char** argv){
 	num_par = argc-1;
@@ -133,3 +126,38 @@ void CMDLineInterface::separate_par_from_files(int argc, char** argv){
 	}
 }
 
+
+
+// Stampa su console la sintassi del programma
+void CMDLineInterface::error_message(int code){
+	switch (code) {
+	case ARGC_ERROR:
+		cout << "Error: I need both parameters and files!" << endl;
+		usage_message();
+		break;
+	case PAR_ERROR:
+		cout << "Looks like you made some syntax error." << endl;
+		usage_message();
+		break;
+	case FILE_ERROR:
+		cout << "Looks like you gave in input some non-existent file." << endl;
+		cout << "	Please check your input files again!" << endl;
+		break;
+	case MODE_ERROR:
+		cout << "Error: tell me if you want to compress or decompress!" << endl;
+		usage_message();
+		break;
+	default:
+		break;
+	}
+}
+
+
+
+//! Print usage message
+void CMDLineInterface::usage_message(void){
+	cout << "	Use: huffman_tbb.exe <mode> [options] <file>" << endl;
+	cout << "	<mode>: -c (--compress), -d (--decompress)" << endl;
+	cout << "	[options]: -p (--parallel), -t (--timer), -v (--verbose)" << endl;
+	cout << "	<file>: filename1 filename2 ... filenameN" << endl;
+}

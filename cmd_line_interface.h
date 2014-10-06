@@ -8,6 +8,7 @@
 #define ARGC_ERROR -1
 #define PAR_ERROR  -2
 #define FILE_ERROR -3
+#define MODE_ERROR -4
 
 //!  CMDLineInterface models the command line interface with the user.
 /*!
@@ -36,9 +37,11 @@ private:
 	//! Parameters and filenames are taken from argv and put in appropriate vectors
 	void separate_par_from_files(int argc, char** argv);
 	//! Check if all parameters are allowed
-	int check_par_consistency();
+	int check_par_consistency(void);
 	//! Check if all the files actually exist
-	int check_file_existence();
+	int check_file_existence(void);
+	//! Print usage message
+	void usage_message(void);
 
 public:
 	//! Constructor
@@ -57,7 +60,7 @@ public:
       \param void
       \return int return code
     */
-	int verify_inputs();
+	int verify_inputs(void);
 
 	//! Print on console error and usage messages
     /*!
@@ -66,6 +69,14 @@ public:
       \return void
 	*/
 	void error_message(int code);
+
+	//! Ask the interface if the current mode is compression or decompression
+    /*!
+	  If the user gave as parameters either "-c" or "--compress", the mode is compression.
+	  If the user gave as parameters either "-d" or "--decompress", the mode is decompression.
+      \return std::string mode
+	*/
+	std::string get_mode(void);
 
 };
 

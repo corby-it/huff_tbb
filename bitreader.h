@@ -21,19 +21,7 @@ class BitReader {
     /*! More detailed uint8_t description. */
 	uint8_t _count;
 
-	//! read_bit function description
-    /*!
-      \param void
-      \return unsigned 32 bit integer
-    */
-	uint32_t read_bit() {
-		if (_count==0) {
-			//! Extract one byte from the stream, stores it in _buf
-			_f.read(reinterpret_cast<char*>(&_buf),1);
-			_count = 8;
-		}
-		return (_buf>>--_count)&1;
-	}
+
 
 public:
 	//! A constructor.
@@ -52,6 +40,20 @@ public:
 		while (n-->0)
 			u = (u<<1) | read_bit();
 		return u;
+	}
+
+		//! read_bit function description
+    /*!
+      \param void
+      \return unsigned 32 bit integer
+    */
+	uint32_t read_bit() {
+		if (_count==0) {
+			//! Extract one byte from the stream, stores it in _buf
+			_f.read(reinterpret_cast<char*>(&_buf),1);
+			_count = 8;
+		}
+		return (_buf>>--_count)&1;
 	}
 };
 
