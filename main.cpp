@@ -47,7 +47,7 @@ struct huff_node {
 };
 
 void depth_assign(huff_node* root, vector<pair<unsigned,uint8_t>> & depthmap);
-void huffman_compress(string in_file, string out_file);
+void huffman_compress(string in_file);
 void huffman_decompress(string in_file, string out_file);
 void canonical_codes(vector<pair<unsigned,uint8_t>> & depthmap, vector<triplet>& codes);
 
@@ -81,6 +81,8 @@ int main (int argc, char *argv[]) {
 
 	In teoria dovrebbe dare errore se si sbagliano i parametri, se il file di input non esiste,
 	se ci sono troppi pochi argomenti ecc ecc 
+
+	I file di prova sono in Debug, quindi per provare se va bisogna entrare in Debug
 	*/
 	CMDLineInterface shell(argc, argv);
 
@@ -92,9 +94,12 @@ int main (int argc, char *argv[]) {
 	}
 
 	
-	if(!shell.get_mode().compare("compression"))
-		//cout << "COMPRESS!" << endl;
-		huffman_compress("prova.txt", "prova.bcp");
+	if(!shell.get_mode().compare("compression")) {
+
+		vector<string> input_files = shell.get_files();
+		for(int i=0; i<input_files.size(); ++i)
+			huffman_compress(input_files[i]);
+	}
 	else
 		//cout << "DECOMPRESS!" << endl;
 		huffman_decompress("prova.bcp", "prova.txt");
@@ -105,13 +110,17 @@ int main (int argc, char *argv[]) {
 
 }
 
-void huffman_compress(string in_file, string out_file){
+void huffman_compress(string in_file){
 	
 	// file di input e di output
 	ifstream in_f(in_file, ifstream::in|ifstream::binary);
+	string out_file(in_file);
+	// converto l'estensione del file di output in ".bcp" 
+	out_file.replace(out_file.size()-4, 4, ".bcp");
 	ofstream out_f(out_file, fstream::out|fstream::binary);
 	// NON salta i whitespaces
 	in_f.unsetf (ifstream::skipws);
+
 	//creo un istogramma per i 256 possibili uint8_t
 	cont_t histo(256);
 	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), histo_incr(histo));

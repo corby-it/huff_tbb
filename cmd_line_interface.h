@@ -78,6 +78,9 @@ public:
 	*/
 	std::string get_mode(void);
 
+
+
+	std::vector<std::string> get_files();
 };
 
 

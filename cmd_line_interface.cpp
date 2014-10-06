@@ -47,6 +47,13 @@ string CMDLineInterface::get_mode(){
 }
 
 
+
+
+vector<string> CMDLineInterface::get_files(){
+	return file_vector;
+}
+
+
 // Check parameters consistency
 int CMDLineInterface::check_par_consistency() {
 
@@ -132,19 +139,19 @@ void CMDLineInterface::separate_par_from_files(int argc, char** argv){
 void CMDLineInterface::error_message(int code){
 	switch (code) {
 	case ARGC_ERROR:
-		cout << "Error: I need both parameters and files!" << endl;
+		cout << endl << "Error: I need both parameters and files!" << endl;
 		usage_message();
 		break;
 	case PAR_ERROR:
-		cout << "Looks like you made some syntax error." << endl;
+		cout << endl <<  "Looks like you made some syntax error." << endl;
 		usage_message();
 		break;
 	case FILE_ERROR:
-		cout << "Looks like you gave in input some non-existent file." << endl;
+		cout << endl <<  "Looks like you gave in input some non-existent file." << endl;
 		cout << "	Please check your input files again!" << endl;
 		break;
 	case MODE_ERROR:
-		cout << "Error: tell me if you want to compress or decompress!" << endl;
+		cout << endl <<  "Error: please tell me if you want to compress or decompress!" << endl;
 		usage_message();
 		break;
 	default:
