@@ -13,61 +13,12 @@
 #include "bitreader.h"
 #include "bitwriter.h"
 #include "cmd_line_interface.h"
+#include "huffman_utils.h"
 
 using namespace std;
 
-struct triplet{
-	uint8_t symbol;
-	uint32_t code;
-	uint32_t code_len;
-};
-
-struct histo_incr {
-	vector<uint32_t>& _histo; 
-
-	histo_incr (vector<uint32_t>& histo) : _histo(histo) {} 
-
-	void operator() (const uint8_t& val) {
-		_histo[val]++;
-	}
-};
-
-struct huff_node {
-	int _symb;
-	unsigned _occ;
-	unsigned _depth;
-	huff_node *_left;
-	huff_node *_right;
-	bool _is_leaf;
-	bool _is_root;
-
-	huff_node ();
-	huff_node (int symb, unsigned occ, bool is_leaf, huff_node *left, huff_node *right) : _symb(symb), _occ(occ), _left(left), _right(right), _is_leaf(is_leaf), _is_root(false), _depth(0) {}
-	huff_node (int symb, unsigned occ) : _symb(symb), _occ(occ), _left(NULL), _right(NULL), _is_leaf(true), _is_root(false), _depth(0){}
-};
-
-void depth_assign(huff_node* root, vector<pair<unsigned,uint8_t>> & depthmap);
 void huffman_compress(string in_file);
 void huffman_decompress(string in_file, string out_file);
-void canonical_codes(vector<pair<unsigned,uint8_t>> & depthmap, vector<triplet>& codes);
-
-double entropy_func (const double& entropy, const double& d) {
-	if (d>0.0)
-		return entropy-d*log(d)/log(2.0);
-	else
-		return entropy;
-}
-
-typedef vector<uint32_t> cont_t;
-typedef cont_t::iterator iter_t;
-
-bool leaves_compare(huff_node* first, huff_node* second){
-	return (first->_occ > second->_occ);
-}
-
-bool depth_compare(pair<unsigned,uint8_t> first, pair<unsigned,uint8_t> second){
-	return (first.first < second.first);
-}
 
 int main (int argc, char *argv[]) {
 
@@ -97,7 +48,7 @@ int main (int argc, char *argv[]) {
 	if(!shell.get_mode().compare("compression")) {
 
 		vector<string> input_files = shell.get_files();
-		for(int i=0; i<input_files.size(); ++i)
+		for(unsigned i=0; i<input_files.size(); ++i)
 			huffman_compress(input_files[i]);
 	}
 	else
@@ -123,54 +74,19 @@ void huffman_compress(string in_file){
 
 	//creo un istogramma per i 256 possibili uint8_t
 	cont_t histo(256);
-	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), histo_incr(histo));
+	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), HistoIncr(histo));
 
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
-	vector<huff_node*> leaves_vect;
-
-	for (size_t i=0;i<histo.size();++i) {
-		if(histo[i] > 0){
-			leaves_vect.push_back(new huff_node(i,histo[i]));
-		}
-	}
-
-	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
-	sort(leaves_vect.begin(), leaves_vect.end(), leaves_compare);
-
-	// creo l'albero di huffman
-	while(leaves_vect.size() > 1){
-		// scelgo i due nodi con probabilità minore
-		huff_node* node1;
-		huff_node* node2;
-		node1 = leaves_vect.back();
-		leaves_vect.pop_back();
-		node2 = leaves_vect.back();
-		leaves_vect.pop_back();
-
-		unsigned tot_occ = node1->_occ + node2->_occ;
-
-		// inserisco il nodo padre nella posizione giusta in base alle probabilità
-		for(unsigned i=0; i<leaves_vect.size(); ++i){
-			if(leaves_vect[i]->_occ <= tot_occ){
-				leaves_vect.insert(leaves_vect.begin()+i, new huff_node(-1, tot_occ, false, node1, node2));
-				break;
-			} else if(i == leaves_vect.size()-1){
-				leaves_vect.insert(leaves_vect.begin()+(i+1), new huff_node(-1, tot_occ, false, node1, node2));
-				break;
-			}
-		}
-
-		// se sono arrivato alla fine creo la root
-		if(leaves_vect.size() == 0) leaves_vect.push_back(new huff_node(-1, tot_occ, false, node1, node2));
-	}
+	LeavesVector leaves_vect;
+	create_huffman_tree(histo, leaves_vect);
 	cout << "albero creato\n";
 
-	leaves_vect[0]->_is_root = true;
+	leaves_vect[0]->setRoot(true);
 
 	// creo una depthmap, esplorando tutto l'albero, per sapere a che profondità si trovano i simboli
 	// la depthmap contiene le coppie <lunghezza_simbolo, simbolo>
-	vector<pair<unsigned,uint8_t>> depthmap;
+	DepthMap depthmap;
 	depth_assign(leaves_vect[0], depthmap);
 
 	cout << "profondita' assegnate\n";
@@ -181,7 +97,7 @@ void huffman_compress(string in_file){
 	cout << "profondita' ordinate\n\n";
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<triplet> codes;
+	vector<Triplet> codes;
 	canonical_codes(depthmap, codes);
 
 	// stampa i codici canonici sulla console
@@ -193,9 +109,9 @@ void huffman_compress(string in_file){
 	cout << "Ci sono " << codes.size() << " simboli" << "\n";
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
-	map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	CodesMap codes_map;
 	for(unsigned i=0; i<codes.size(); ++i){
-		codes_map.insert(pair<uint8_t, pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
+		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
 	}
 
 	//system("pause");
@@ -230,7 +146,7 @@ void huffman_compress(string in_file){
 
 	while(in_f.good()){
 		tmp = in_f.get();
-		btw.write(codes_map[tmp].first,codes_map[tmp].second);
+		btw.write(codes_map[tmp].first, codes_map[tmp].second);
 	}
 	btw.flush();
 
@@ -270,14 +186,14 @@ void huffman_decompress(string in_file, string out_file){
 		depthmap.push_back( pair<unsigned, uint8_t>(btr.read(8), btr.read(8)) );
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<triplet> codes;
+	vector<Triplet> codes;
 	canonical_codes(depthmap, codes);
 
 	// crea una mappa <codice, <simbolo, lunghezza_codice>>
-	map<uint32_t, pair<uint8_t, uint32_t>> codes_map;
+	CodesMap codes_map;
 	
 	for(unsigned i=0; i<codes.size(); ++i)
-		codes_map.insert(pair<uint32_t, pair<uint32_t, uint8_t>>(codes[i].code, pair<uint32_t, uint8_t>(codes[i].symbol, codes[i].code_len)));
+		codes_map.insert(CodesMapElement(codes[i].code, CodesMapValue(codes[i].symbol, codes[i].code_len)));
 	
 	// leggo il file compresso e scrivo l'output
 	while(in_f.good()){
@@ -305,50 +221,4 @@ void huffman_decompress(string in_file, string out_file){
 	// chiudo i file
 	in_f.close();
 	out_f.close();
-
-}
-
-void depth_assign(huff_node* root, vector<pair<unsigned,uint8_t>> & depthmap){
-	if(root->_is_leaf){
-		depthmap.push_back(pair<unsigned,uint8_t>(root->_depth,root->_symb));
-		return;
-	} else {
-		if(root->_is_root){
-			root->_left->_depth = 1;
-			root->_right->_depth = 1;
-
-			depth_assign(root->_left, depthmap);
-			depth_assign(root->_right, depthmap);
-		} else {
-			root->_left->_depth = root->_depth;
-			root->_left->_depth += 1;
-			root->_right->_depth = root->_depth;
-			root->_right->_depth += 1;
-
-			depth_assign(root->_left, depthmap);
-			depth_assign(root->_right, depthmap);
-		}
-	}
-}
-
-void canonical_codes(vector<pair<unsigned,uint8_t>> & depthmap, vector<triplet>& codes){
-	triplet curr_code;
-	curr_code.code = 0;
-	curr_code.code_len = depthmap[0].first;
-	curr_code.symbol = depthmap[0].second;
-
-	codes.push_back(curr_code);
-
-	// calcolo i codici canonici
-	for(unsigned i=1; i<depthmap.size(); ++i){
-		if(depthmap[i].first > curr_code.code_len){
-			curr_code.code = (curr_code.code+1)<<(depthmap[i].first - curr_code.code_len);
-		} else {
-			curr_code.code += 1;
-		}
-		curr_code.symbol = depthmap[i].second;
-		curr_code.code_len = depthmap[i].first;
-
-		codes.push_back(curr_code);
-	}
 }
