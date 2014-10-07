@@ -3,6 +3,7 @@
 #include "bitreader.h"
 #include "bitwriter.h"
 
+#include "tbb/tbb.h"
 #include <fstream>
 
 
