@@ -160,7 +160,7 @@ void depth_assign(HuffNode* root, DepthMap & depthmap){
 }
 
 
-void canonical_codes(DepthMap & depthmap, vector<Triplet>& codes){
+void canonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
 	Triplet curr_code;
 	curr_code.code = 0;
 	curr_code.code_len = depthmap[0].first;
