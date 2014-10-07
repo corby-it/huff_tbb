@@ -4,24 +4,22 @@
 #include <cstdint>
 #include <vector>
 
-using namespace std;
-
 // CLASSES
 
 struct Triplet{
-	uint8_t symbol;
-	uint32_t code;
-	uint32_t code_len;
+	std::uint8_t symbol;
+	std::uint32_t code;
+	std::uint32_t code_len;
 };
 
 class HistoIncr {
 private:
-	vector<uint32_t>& _histo; 
+	std::vector<uint32_t>& _histo; 
 
 public:
-	HistoIncr (vector<uint32_t>& histo) : _histo(histo) {} 
+	HistoIncr (std::vector<uint32_t>& histo) : _histo(histo) {} 
 
-	void operator() (const uint8_t& val) {
+	void operator() (const std::uint8_t& val) {
 		_histo[val]++;
 	}
 };
@@ -72,18 +70,18 @@ public:
 	void setRoot (bool root){ _isRoot = root; }
 };
 
-typedef vector<uint32_t> cont_t;
+typedef std::vector<std::uint32_t> cont_t;
 typedef cont_t::iterator iter_t;
 
-typedef vector<HuffNode*> LeavesVector;
+typedef std::vector<HuffNode*> LeavesVector;
 
-typedef vector<pair<unsigned,uint8_t>> DepthMap;
-typedef pair<unsigned,uint8_t> DepthMapElement;
+typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
+typedef std::pair<unsigned,std::uint8_t> DepthMapElement;
 
-typedef map<uint8_t, pair<uint32_t,uint32_t>> CodesMap;
-typedef pair<uint8_t, pair<uint32_t,uint32_t>> CodesMapElement;
-typedef uint8_t CodesMapKey;
-typedef pair<uint32_t,uint32_t> CodesMapValue;
+typedef std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMap;
+typedef std::pair<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMapElement;
+typedef std::uint8_t CodesMapKey;
+typedef std::pair<std::uint32_t,std::uint32_t> CodesMapValue;
 
 // METHODS
 
@@ -101,14 +99,14 @@ bool depth_compare(DepthMapElement first, DepthMapElement second){
 void create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 	
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
-	for (size_t i=0;i<histo.size();++i) {
+	for (std::size_t i=0;i<histo.size();++i) {
 		if(histo[i] > 0){
 			leaves_vect.push_back(new HuffNode(i,histo[i]));
 		}
 	}
 
 	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
-	sort(leaves_vect.begin(), leaves_vect.end(), HuffNode::leaves_compare);
+	std::sort(leaves_vect.begin(), leaves_vect.end(), HuffNode::leaves_compare);
 
 	// creo l'albero di huffman
 	while(leaves_vect.size() > 1){
@@ -162,7 +160,7 @@ void depth_assign(HuffNode* root, DepthMap & depthmap){
 }
 
 
-void canonical_codes(vector<pair<unsigned,uint8_t>> & depthmap, vector<Triplet>& codes){
+void canonical_codes(DepthMap & depthmap, vector<Triplet>& codes){
 	Triplet curr_code;
 	curr_code.code = 0;
 	curr_code.code_len = depthmap[0].first;

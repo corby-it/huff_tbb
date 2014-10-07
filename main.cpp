@@ -125,7 +125,7 @@ void huffman_compress(string in_file){
 	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
 	 * - un magic number di 4 byte per contraddistinguere il formato: BCP1 (in hex: 42 43 50 01) 
 	 * - i primi 4 byte dicono quanti simboli ci sono (n)
-	 * - il primo byte è seguito dagli n simboli:
+	 * - seguono gli n simboli:
 	 *		-- 1 byte per il simbolo, 1 byte per la lunghezza
 	 */
 	//scrivo il magic number
@@ -174,16 +174,16 @@ void huffman_decompress(string in_file, string out_file){
 	uint32_t magic_number = btr.read(32);
 	if(magic_number != 0x42435001){
 		cout << "Error: unknown format, wrong magic number..." << "\n";
-		return;
+		exit(1);
 	}
 
 	// leggo il numero di simboli totali
 	uint32_t tot_symbols = btr.read(32);
 	// creo un vettore di coppie <lunghezza_simbolo, simbolo>
-	vector<pair<unsigned, uint8_t>> depthmap;
+	DepthMap depthmap;
 
 	for(unsigned i=0; i<tot_symbols; ++i)
-		depthmap.push_back( pair<unsigned, uint8_t>(btr.read(8), btr.read(8)) );
+		depthmap.push_back( DepthMapElement(btr.read(8), btr.read(8)) );
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<Triplet> codes;
@@ -213,7 +213,7 @@ void huffman_decompress(string in_file, string out_file){
 		}
 
 		// se esco dal while ho trovato un codice, lo leggo, e lo scrivo sul file di output
-		pair<uint8_t, uint32_t> tmp_sym_pair = codes_map[tmp_code];
+		CodesMapValue tmp_sym_pair = codes_map[tmp_code];
 		btw.write(tmp_sym_pair.first, 8);
 	}
 	btw.flush();
