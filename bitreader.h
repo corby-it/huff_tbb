@@ -4,8 +4,6 @@
 #include <iostream>
 #include <cstdint>
 
-using namespace std;
-
 //!  BitReader class is used to read bit-by-bit
 /*!
   A more elaborate class description.
@@ -13,13 +11,13 @@ using namespace std;
 class BitReader {
 	//! istream.
     /*! More detailed istream description. */
-	istream& _f;
+	std::istream& _f;
 	//! An uint8_t.
     /*! More detailed uint8_t description. */
-	uint8_t _buf;
+	std::uint8_t _buf;
 	//! An uint8_t.
     /*! More detailed uint8_t description. */
-	uint8_t _count;
+	std::uint8_t _count;
 
 
 
@@ -28,15 +26,15 @@ public:
     /*!
       A more elaborate description of the constructor.
     */
-	BitReader (istream& f) : _f(f),_count(0) {}
+	BitReader (std::istream& f) : _f(f),_count(0) {}
 
 	//! read function description
     /*!
       \param n an unsigned 8 bit integer
       \return unsigned 32 bit integer
     */
-	uint32_t read (uint8_t n) {
-		uint32_t u = 0;
+	std::uint32_t read (std::uint8_t n) {
+		std::uint32_t u = 0;
 		while (n-->0)
 			u = (u<<1) | read_bit();
 		return u;
@@ -47,7 +45,7 @@ public:
       \param void
       \return unsigned 32 bit integer
     */
-	uint32_t read_bit() {
+	std::uint32_t read_bit() {
 		if (_count==0) {
 			//! Extract one byte from the stream, stores it in _buf
 			_f.read(reinterpret_cast<char*>(&_buf),1);

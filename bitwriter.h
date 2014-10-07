@@ -4,8 +4,6 @@
 #include <iostream>
 #include <cstdint>
 
-using namespace std;
-
 //!  BitWriter class is used to write bit-by-bit 
 /*!
   A more elaborate class description.
@@ -13,20 +11,20 @@ using namespace std;
 class BitWriter {
 	//! ostream.
     /*! More detailed ostream description. */
-	ostream& _f;
+	std::ostream& _f;
 	//! uint8_t.
     /*! More detailed uint8_t description. */
-	uint8_t _buf;
+	std::uint8_t _buf;
 	//! uint8_t.
     /*! More detailed uint8_t description. */
-	uint8_t _count;
+	std::uint8_t _count;
 
     //! write_bit function description
     /*!
       \param u an unsigned 32 bit integer
       \return void
     */
-	void write_bit (uint32_t u) {
+	void write_bit (std::uint32_t u) {
 		_buf = (_buf<<1) + (u&1);
 		_count++;
 		if (_count==8) {
@@ -41,7 +39,7 @@ public:
     /*!
       A more elaborate description of the constructor.
     */
-	BitWriter (ostream& f) : _f(f),_count(0) {}
+	BitWriter (std::ostream& f) : _f(f),_count(0) {}
 
 	//! write function description
     /*!
@@ -50,7 +48,7 @@ public:
       \return void
       \sa BitWriter::flush()
     */
-	void write (uint32_t u, uint8_t n) {
+	void write (std::uint32_t u, std::uint8_t n) {
 		while (n-->0)
 			write_bit(u>>n);
 	}
