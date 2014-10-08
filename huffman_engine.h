@@ -14,6 +14,8 @@ public:
 	void compress(std::string in_file);
 	void decompress(std::string in_file, std::string out_file);
 
+	void compress_p(std::string in_file);
+
 };
 
 

@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
 
 		vector<string> input_files = shell.get_files();
 		for(unsigned i=0; i<input_files.size(); ++i)
-			huff.compress(input_files[i]);
+			huff.compress_p(input_files[i]);
 	}
 	else
 		//cout << "DECOMPRESS!" << endl;

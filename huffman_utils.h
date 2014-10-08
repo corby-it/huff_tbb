@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <algorithm> //std::sort
+#include "tbb\tbb.h"
 
 // CLASSES
 
@@ -85,6 +86,9 @@ typedef std::pair<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMap
 typedef std::uint8_t CodesMapKey;
 typedef std::pair<std::uint32_t,std::uint32_t> CodesMapValue;
 
+typedef std::vector<tbb::atomic<std::uint32_t>> TbbHisto;
+
+
 // METHODS
 
 double entropy_func (const double& entropy, const double& d) {
@@ -99,6 +103,46 @@ bool depth_compare(DepthMapElement first, DepthMapElement second){
 }
 
 void create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
+	
+	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
+	for (std::size_t i=0;i<histo.size();++i) {
+		if(histo[i] > 0){
+			leaves_vect.push_back(new HuffNode(i,histo[i]));
+		}
+	}
+
+	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
+	std::sort(leaves_vect.begin(), leaves_vect.end(), HuffNode::leaves_compare);
+
+	// creo l'albero di huffman
+	while(leaves_vect.size() > 1){
+		// scelgo i due nodi con probabilità minore
+		HuffNode* node1;
+		HuffNode* node2;
+		node1 = leaves_vect.back();
+		leaves_vect.pop_back();
+		node2 = leaves_vect.back();
+		leaves_vect.pop_back();
+
+		unsigned tot_occ = node1->getOcc() + node2->getOcc();
+
+		// inserisco il nodo padre nella posizione giusta in base alle probabilità
+		for(unsigned i=0; i<leaves_vect.size(); ++i){
+			if(leaves_vect[i]->getOcc() <= tot_occ){
+				leaves_vect.insert(leaves_vect.begin()+i, new HuffNode(-1, tot_occ, false, node1, node2));
+				break;
+			} else if(i == leaves_vect.size()-1){
+				leaves_vect.insert(leaves_vect.begin()+(i+1), new HuffNode(-1, tot_occ, false, node1, node2));
+				break;
+			}
+		}
+
+		// se sono arrivato alla fine creo la root
+		if(leaves_vect.size() == 0) leaves_vect.push_back(new HuffNode(-1, tot_occ, false, node1, node2));
+	}
+}
+
+void create_huffman_tree_p(TbbHisto histo, LeavesVector& leaves_vect){
 	
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	for (std::size_t i=0;i<histo.size();++i) {
@@ -160,7 +204,6 @@ void depth_assign(HuffNode* root, DepthMap & depthmap){
 		}
 	}
 }
-
 
 void canonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
 	Triplet curr_code;
