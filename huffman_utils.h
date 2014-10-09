@@ -210,6 +210,9 @@ public:
 		return (first->getOcc() > second->getOcc());
 	}
 
+	void to_string(){
+		std::cerr << "Symb: " << getSymb() << "\tOcc: " << getOcc() << endl;
+	}
 
 	// Getters and setters
 	int getSymb (){ return _symb; }
