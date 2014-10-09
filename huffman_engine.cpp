@@ -18,100 +18,6 @@ HuffmanEngine::HuffmanEngine (){
 
 }
 
-void HuffmanEngine::compress(string in_file){
-
-	// file di input e di output
-	ifstream in_f(in_file, ifstream::in|ifstream::binary);
-	string out_file(in_file);
-	// converto l'estensione del file di output in ".bcp" 
-	out_file.replace(out_file.size()-4, 4, ".bcp");
-	ofstream out_f(out_file, fstream::out|fstream::binary);
-	// NON salta i whitespaces
-	in_f.unsetf (ifstream::skipws);
-
-	//creo un istogramma per i 256 possibili uint8_t
-	cont_t histo(256);
-	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), HistoIncr(histo));
-
-
-	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
-	LeavesVector leaves_vect;
-	create_huffman_tree(histo, leaves_vect);
-	cerr << "[SEQ] Albero creato" << endl;
-
-	leaves_vect[0]->setRoot(true);
-
-	// creo una depthmap, esplorando tutto l'albero, per sapere a che profondità si trovano i simboli
-	// la depthmap contiene le coppie <lunghezza_simbolo, simbolo>
-	DepthMap depthmap;
-	depth_assign(leaves_vect[0], depthmap);
-
-	cerr << "[SEQ] Profondita' assegnate\n";
-
-	// ordino la depthmap per profondità 
-	sort(depthmap.begin(), depthmap.end(), depth_compare);
-
-	cerr << "[SEQ] Profondita' ordinate" << endl;
-
-	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<Triplet> codes;
-	canonical_codes(depthmap, codes);
-
-	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
-	//cout << "SYM\tCODE\tC_LEN\n";
-	//for(unsigned i=0; i<codes.size(); ++i)
-	//	cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
-	//-----------------------------------------------------------------------------------
-	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << endl;
-
-	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
-	CodesMap codes_map;
-	for(unsigned i=0; i<codes.size(); ++i){
-		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
-	}
-
-	cout << "[SEQ] Scrittura su file..." << endl;
-
-	// crea il file di output
-	BitWriter btw(out_f);
-	uint8_t tmp;
-
-	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
-	* - un magic number di 4 byte per contraddistinguere il formato: BCP1 (in hex: 42 43 50 01) 
-	* - i primi 4 byte dicono quanti simboli ci sono (n)
-	* - seguono gli n simboli:
-	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
-	*/
-	//scrivo il magic number
-	btw.write(0x42435001, 32); //BCP
-	// scrivo il numero di simboli
-	btw.write(depthmap.size(), 32);
-	// scrivo tutti i simboli seguiti dalle lunghezze
-	for(unsigned i=0; i<depthmap.size(); ++i){
-		btw.write(depthmap[i].second, 8);
-		btw.write(depthmap[i].first, 8);
-	}
-
-	// scrivo l'output compresso
-	// resetto in_f all'inizio
-	in_f.clear();
-	in_f.seekg(0, ios::beg);
-	in_f.unsetf (ifstream::skipws);
-
-	while(in_f.good()){
-		tmp = in_f.get();
-		btw.write(codes_map[tmp].first, codes_map[tmp].second);
-	}
-	btw.flush();
-
-	in_f.close();
-	out_f.close();
-
-	cout << "[SEQ] Fatto!" << endl;
-
-}
-
-
 void HuffmanEngine::decompress(string in_file, string out_file){
 
 	cout << "Decompressing " << out_file << "..." << endl;
@@ -179,9 +85,112 @@ void HuffmanEngine::decompress(string in_file, string out_file){
 	out_f.close();
 }
 
+void HuffmanEngine::compress(string in_file){
+	// utili per ottimizzazioni
+	tick_count t0, t1;
 
+	// file di input e di output
+	ifstream in_f(in_file, ifstream::in|ifstream::binary);
+	string out_file(in_file);
+	// converto l'estensione del file di output in ".bcp" 
+	out_file.replace(out_file.size()-4, 4, ".bcp");
+	ofstream out_f(out_file, fstream::out|fstream::binary);
+	// NON salta i whitespaces
+	in_f.unsetf (ifstream::skipws);
+
+	//creo un istogramma per i 256 possibili uint8_t
+
+	t0 = tick_count::now();
+	cont_t histo(256);
+	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), HistoIncr(histo));
+	t1 = tick_count::now();
+	cerr << "[SEQ] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+
+	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
+	t0 = tick_count::now();
+	LeavesVector leaves_vect;
+	create_huffman_tree(histo, leaves_vect);
+	t1 = tick_count::now();
+	cerr << "[SEQ] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+
+	leaves_vect[0]->setRoot(true);
+
+	// creo una depthmap, esplorando tutto l'albero, per sapere a che profondità si trovano i simboli
+	// la depthmap contiene le coppie <lunghezza_simbolo, simbolo>
+	DepthMap depthmap;
+	depth_assign(leaves_vect[0], depthmap);
+
+	cerr << "[SEQ] Profondita' assegnate\n";
+
+	// ordino la depthmap per profondità 
+	sort(depthmap.begin(), depthmap.end(), depth_compare);
+
+	cerr << "[SEQ] Profondita' ordinate" << endl;
+
+	// creo i codici canonici usando la depthmap e li scrivo in codes
+	vector<Triplet> codes;
+	canonical_codes(depthmap, codes);
+
+	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
+	//cout << "SYM\tCODE\tC_LEN\n";
+	//for(unsigned i=0; i<codes.size(); ++i)
+	//	cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
+	//-----------------------------------------------------------------------------------
+	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << endl;
+
+	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
+	CodesMap codes_map;
+	for(unsigned i=0; i<codes.size(); ++i){
+		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
+	}
+
+	cout << "[SEQ] Scrittura su file..." << endl;
+	t0 = tick_count::now();
+	// crea il file di output
+	BitWriter btw(out_f);
+	uint8_t tmp;
+
+	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
+	* - un magic number di 4 byte per contraddistinguere il formato: BCP1 (in hex: 42 43 50 01) 
+	* - i primi 4 byte dicono quanti simboli ci sono (n)
+	* - seguono gli n simboli:
+	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
+	*/
+	//scrivo il magic number
+	btw.write(0x42435001, 32); //BCP
+	// scrivo il numero di simboli
+	btw.write(depthmap.size(), 32);
+	// scrivo tutti i simboli seguiti dalle lunghezze
+	for(unsigned i=0; i<depthmap.size(); ++i){
+		btw.write(depthmap[i].second, 8);
+		btw.write(depthmap[i].first, 8);
+	}
+
+	// scrivo l'output compresso
+	// resetto in_f all'inizio
+	in_f.clear();
+	in_f.seekg(0, ios::beg);
+	in_f.unsetf (ifstream::skipws);
+
+	while(in_f.good()){
+		tmp = in_f.get();
+		btw.write(codes_map[tmp].first, codes_map[tmp].second);
+	}
+	btw.flush();
+	t1 = tick_count::now();
+	cerr << "[SEQ] La scrittura del file di output ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+
+	in_f.close();
+	out_f.close();
+
+}
+
+
+
+//questa è la versione di compress che funziona in parallelo
 void HuffmanEngine::compress_p(string in_file){
-	//questa è la versione di compress che funziona in parallelo
+	// utili per ottimizzazione
+	tick_count t0, t1;
 
 	// file di input e di output
 	ifstream in_f(in_file, ifstream::in|ifstream::binary|fstream::ate);
@@ -201,22 +210,23 @@ void HuffmanEngine::compress_p(string in_file){
 	in_f.read(buffer, length);
 	file.assign(buffer, buffer+length);
 
-	//creo un istogramma per i 256 possibili uint8_t
-	// new parallel histogram
+	// Creazione dell'istogramma in parallelo
+	t0 = tick_count::now();
 	TBBHisto histo(256);
-
 	parallel_for(blocked_range<int>( 0, length, 10000 ), [&](const blocked_range<int>& range) {
 		for( int i=range.begin(); i!=range.end(); ++i ){
 			histo[file[i]]++;
 		}
 	});
-
-	cerr << "[PAR] Creato istogramma" << endl;
+	t1 = tick_count::now();
+	cerr << "[PAR] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
+	t0 = tick_count::now();
 	TBBLeavesVector leaves_vect;
 	create_huffman_tree_p(histo, leaves_vect);
-	cerr << "[PAR] Albero creato" << endl;
+	t1 = tick_count::now();
+	cerr << "[PAR] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 	leaves_vect[0]->setRoot(true);
 
@@ -250,11 +260,10 @@ void HuffmanEngine::compress_p(string in_file){
 	}
 
 	cerr << "[PAR] Scrittura su file..." << endl;
-
+	t0 = tick_count::now();
 	// crea il file di output
 	BitWriter btw(out_f);
-	uint8_t tmp;
-
+	
 	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
 	* - un magic number di 4 byte per contraddistinguere il formato: BCP1 (in hex: 42 43 50 01) 
 	* - i primi 4 byte dicono quanti simboli ci sono (n)
@@ -271,21 +280,15 @@ void HuffmanEngine::compress_p(string in_file){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	// scrivo l'output compresso
-	// resetto in_f all'inizio
-	in_f.clear();
-	in_f.seekg(0, ios::beg);
-	in_f.unsetf (ifstream::skipws);
-
-	while(in_f.good()){
-		tmp = in_f.get();
-		btw.write(codes_map[tmp].first, codes_map[tmp].second);
-	}
+	// Scrittura del file di output
+	for (int i = 0; i < length; i++)
+		btw.write(codes_map[file[i]].first, codes_map[file[i]].second);
 	btw.flush();
+	t1 = tick_count::now();
+	cerr << "[PAR] La scrittura del file di output ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 	in_f.close();
 	out_f.close();
 
-	cerr << "[PAR] Fatto!" << endl;
 }
 
