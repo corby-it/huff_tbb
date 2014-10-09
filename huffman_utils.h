@@ -211,7 +211,7 @@ public:
 	}
 
 	void to_string(){
-		std::cerr << "Symb: " << getSymb() << "\tOcc: " << getOcc() << endl;
+		std::cerr << "Symb: " << getSymb() << "\tOcc: " << getOcc() << std::endl;
 	}
 
 	// Getters and setters
@@ -251,6 +251,7 @@ void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
 				tbb::atomic<int> j;
 				j = i;
 				leaves_vect.push_back(new TBBHuffNode(j,histo[i]));
+				std::cerr << j << " " << histo[i] << std::endl;
 			}
 		}
 	});
