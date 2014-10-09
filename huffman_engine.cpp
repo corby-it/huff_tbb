@@ -71,8 +71,6 @@ void HuffmanEngine::compress(string in_file){
 		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
 	}
 
-	//system("pause");
-
 	cout << "scrittura su file...\n";
 
 	// crea il file di output
@@ -86,7 +84,7 @@ void HuffmanEngine::compress(string in_file){
 	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
 	*/
 	//scrivo il magic number
-	btw.write(0x42435001, 32);
+	btw.write(0x42435001, 32); //BCP
 	// scrivo il numero di simboli
 	btw.write(depthmap.size(), 32);
 	// scrivo tutti i simboli seguiti dalle lunghezze
@@ -205,7 +203,7 @@ void HuffmanEngine::compress_p(string in_file){
 
 	//creo un istogramma per i 256 possibili uint8_t
 	// new parallel histogram
-	TbbHisto histo(256);
+	TBBHisto histo(256);
 
 	parallel_for(blocked_range<int>( 0, length, 10000 ), [&](const blocked_range<int>& range) {
 		for( int i=range.begin(); i!=range.end(); ++i ){
@@ -213,44 +211,43 @@ void HuffmanEngine::compress_p(string in_file){
 		}
 	});
 
+	cerr << "[PAR] Creato istogramma" << endl;
+
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
-	LeavesVector leaves_vect;
+	TBBLeavesVector leaves_vect;
 	create_huffman_tree_p(histo, leaves_vect);
-	cout << "albero creato\n";
+	cerr << "[PAR] Albero creato\n";
 
 	leaves_vect[0]->setRoot(true);
 
 	// creo una depthmap, esplorando tutto l'albero, per sapere a che profondità si trovano i simboli
 	// la depthmap contiene le coppie <lunghezza_simbolo, simbolo>
 	DepthMap depthmap;
-	depth_assign(leaves_vect[0], depthmap);
+	depth_assign_p(leaves_vect[0], depthmap);
 
-	cout << "profondita' assegnate\n";
+	cerr << "[PAR] Profondita' assegnate\n";
 
 	// ordino la depthmap per profondità 
 	sort(depthmap.begin(), depthmap.end(), depth_compare);
 
-	cout << "profondita' ordinate\n\n";
+	cerr << "[PAR] Profondita' ordinate\n\n";
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<Triplet> codes;
 	canonical_codes(depthmap, codes);
 
 	// stampa i codici canonici sulla console
-	cout << "SYM\tCODE\tC_LEN\n";
+	cerr << "SYM\tCODE\tC_LEN\n";
 	for(unsigned i=0; i<codes.size(); ++i)
-		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << "\n";
-
-	cout << "\n";
-	cout << "Ci sono " << codes.size() << " simboli" << "\n";
+		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
+	cerr << endl;
+	cerr << "[PAR] Ci sono " << codes.size() << " simboli" << endl;
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
 	CodesMap codes_map;
 	for(unsigned i=0; i<codes.size(); ++i){
 		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
 	}
-
-	//system("pause");
 
 	cout << "scrittura su file...\n";
 

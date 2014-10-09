@@ -2,9 +2,9 @@
 #include "bitwriter.h"
 #include "cmd_line_interface.h"
 #include "huffman_engine.h"
-
+#include "tbb/tick_count.h"
 using namespace std;
-
+using tbb::tick_count;
 
 int main (int argc, char *argv[]) {
 
@@ -21,6 +21,8 @@ int main (int argc, char *argv[]) {
 
 	I file di prova sono in Debug, quindi per provare se va bisogna entrare in Debug
 	*/
+	tick_count t0p, t1p, t0s, t1s;
+
 	CMDLineInterface shell(argc, argv);
 
 
@@ -35,16 +37,30 @@ int main (int argc, char *argv[]) {
 	if(!shell.get_mode().compare("compression")) {
 
 		vector<string> input_files = shell.get_files();
-		for(unsigned i=0; i<input_files.size(); ++i)
+		for(unsigned i=0; i<input_files.size(); ++i){
+
+			// --- Comprimi con compressione parallela
+			t0p = tick_count::now();
 			huff.compress_p(input_files[i]);
+			t1p = tick_count::now();
+			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl;
+			
+			// --- Comprimi con compressione sequenziale
+			t0s = tick_count::now();
+			huff.compress(input_files[i]);
+			t1s = tick_count::now();
+			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl;
+
+		}
 	}
 	else
 		//cout << "DECOMPRESS!" << endl;
 		huff.decompress("prova.bcp", "prova.txt");
 
 
-	exit(0);
+	system("pause");
 
+	exit(0);
 
 }
 
