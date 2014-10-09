@@ -6,6 +6,7 @@
 #include <map>
 #include <algorithm> //std::sort
 #include "tbb\tbb.h"
+#include "tbb/concurrent_vector.h"
 
 // CLASSES
 
@@ -48,6 +49,11 @@ public:
 	// funzione usata dal sort
 	static bool leaves_compare(HuffNode* first, HuffNode* second){
 		return (first->getOcc() > second->getOcc());
+	}
+
+	// funzione utile per debug
+	void to_string(){
+		std::cerr << "Symb: " << getSymb() << "\tOcc: " << getOcc() << std::endl;
 	}
 
 	// Getters and setters
@@ -110,6 +116,10 @@ void create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 
 	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
 	std::sort(leaves_vect.begin(), leaves_vect.end(), HuffNode::leaves_compare);
+	// ---------------solo per debug -------------------
+	for(int i=0; i<leaves_vect.size(); ++i)
+		leaves_vect[i]->to_string();
+	// -------------------------------------------------
 
 	// creo l'albero di huffman
 	while(leaves_vect.size() > 1){
@@ -239,7 +249,8 @@ public:
 
 
 typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto;
-typedef std::vector<TBBHuffNode*> TBBLeavesVector;
+typedef tbb::concurrent_vector<TBBHuffNode*> TBBLeavesVector;
+//typedef std::vector<TBBHuffNode*> TBBLeavesVector;
 
 
 void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
@@ -251,7 +262,6 @@ void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
 				tbb::atomic<int> j;
 				j = i;
 				leaves_vect.push_back(new TBBHuffNode(j,histo[i]));
-				std::cerr << j << " " << histo[i] << std::endl;
 			}
 		}
 	});
@@ -263,18 +273,26 @@ void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
 	//	}
 	//}
 
+	std::cerr << "Arrivo fino a qui: punto 1" << std::endl;
+
 	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
 	std::sort(leaves_vect.begin(), leaves_vect.end(), TBBHuffNode::leaves_compare);
-
+	// ---------------solo per debug -------------------
+	for(int i=0; i<leaves_vect.size(); ++i)
+		leaves_vect[i]->to_string();
+	// -------------------------------------------------
+	std::cerr << "Arrivo fino a qui: punto 2" << std::endl;
+	
 	// creo l'albero di huffman
 	while(leaves_vect.size() > 1){
 		// scelgo i due nodi con probabilità minore
 		TBBHuffNode* node1;
 		TBBHuffNode* node2;
 		node1 = leaves_vect.back();
-		leaves_vect.pop_back();
+		
+		//leaves_vect.pop_back(); //questa istruzione se commentata causa deadlock
 		node2 = leaves_vect.back();
-		leaves_vect.pop_back();
+		//leaves_vect.pop_back(); //questa istruzione se commentata causa deadlock
 
 		unsigned tot_occ = node1->getOcc() + node2->getOcc();
 
@@ -288,10 +306,10 @@ void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
 		for(unsigned i=0; i<leaves_vect.size(); ++i){
 
 			if(leaves_vect[i]->getOcc() <= tot_occ){
-				leaves_vect.insert(leaves_vect.begin()+i, new TBBHuffNode(j, atomic_tot_occ, false, node1, node2));
+				//leaves_vect.insert(leaves_vect.begin()+i, new TBBHuffNode(j, atomic_tot_occ, false, node1, node2)); //questa istruzione se commentata causa deadlock
 				break;
 			} else if(i == leaves_vect.size()-1){
-				leaves_vect.insert(leaves_vect.begin()+(i+1), new TBBHuffNode(j, atomic_tot_occ, false, node1, node2));
+				//leaves_vect.insert(leaves_vect.begin()+(i+1), new TBBHuffNode(j, atomic_tot_occ, false, node1, node2)); //questa istruzione se commentata causa deadlock
 				break;
 			}
 		}
@@ -299,6 +317,8 @@ void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
 		// se sono arrivato alla fine creo la root
 		if(leaves_vect.size() == 0)	leaves_vect.push_back(new TBBHuffNode(j, atomic_tot_occ, false, node1, node2));
 	}
+
+	std::cerr << "Arrivo fino a qui: punto 3" << std::endl;
 }
 
 void depth_assign_p(TBBHuffNode* tbb_huff_node, DepthMap & depthmap){

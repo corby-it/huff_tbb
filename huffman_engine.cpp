@@ -37,7 +37,7 @@ void HuffmanEngine::compress(string in_file){
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	LeavesVector leaves_vect;
 	create_huffman_tree(histo, leaves_vect);
-	cout << "albero creato\n";
+	cerr << "[SEQ] Albero creato\n";
 
 	leaves_vect[0]->setRoot(true);
 
@@ -46,12 +46,12 @@ void HuffmanEngine::compress(string in_file){
 	DepthMap depthmap;
 	depth_assign(leaves_vect[0], depthmap);
 
-	cout << "profondita' assegnate\n";
+	cerr << "[SEQ] Profondita' assegnate\n";
 
 	// ordino la depthmap per profondità 
 	sort(depthmap.begin(), depthmap.end(), depth_compare);
 
-	cout << "profondita' ordinate\n\n";
+	cerr << "[SEQ] Profondita' ordinate\n\n";
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<Triplet> codes;
@@ -63,7 +63,7 @@ void HuffmanEngine::compress(string in_file){
 		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << "\n";
 
 	cout << "\n";
-	cout << "Ci sono " << codes.size() << " simboli" << "\n";
+	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << "\n";
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
 	CodesMap codes_map;
@@ -71,7 +71,7 @@ void HuffmanEngine::compress(string in_file){
 		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
 	}
 
-	cout << "scrittura su file...\n";
+	cout << "[SEQ] Scrittura su file..." << endl;
 
 	// crea il file di output
 	BitWriter btw(out_f);
@@ -108,7 +108,8 @@ void HuffmanEngine::compress(string in_file){
 	in_f.close();
 	out_f.close();
 
-	cout << "fatto\n";
+	cout << "[SEQ] Fatto!" << endl;
+
 }
 
 
