@@ -37,7 +37,7 @@ void HuffmanEngine::compress(string in_file){
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	LeavesVector leaves_vect;
 	create_huffman_tree(histo, leaves_vect);
-	cerr << "[SEQ] Albero creato\n";
+	cerr << "[SEQ] Albero creato" << endl;
 
 	leaves_vect[0]->setRoot(true);
 
@@ -51,19 +51,18 @@ void HuffmanEngine::compress(string in_file){
 	// ordino la depthmap per profondità 
 	sort(depthmap.begin(), depthmap.end(), depth_compare);
 
-	cerr << "[SEQ] Profondita' ordinate\n\n";
+	cerr << "[SEQ] Profondita' ordinate" << endl;
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<Triplet> codes;
 	canonical_codes(depthmap, codes);
 
-	// stampa i codici canonici sulla console
-	cout << "SYM\tCODE\tC_LEN\n";
-	for(unsigned i=0; i<codes.size(); ++i)
-		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << "\n";
-
-	cout << "\n";
-	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << "\n";
+	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
+	//cout << "SYM\tCODE\tC_LEN\n";
+	//for(unsigned i=0; i<codes.size(); ++i)
+	//	cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
+	//-----------------------------------------------------------------------------------
+	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << endl;
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
 	CodesMap codes_map;
@@ -115,7 +114,7 @@ void HuffmanEngine::compress(string in_file){
 
 void HuffmanEngine::decompress(string in_file, string out_file){
 
-	cout << "Decompressing " << out_file << "..." << "\n";
+	cout << "Decompressing " << out_file << "..." << endl;
 
 	// aggiungo "decompressed" al file di output
 	out_file.insert(out_file.size()-4, "_decompressed");
@@ -130,7 +129,7 @@ void HuffmanEngine::decompress(string in_file, string out_file){
 	// leggo il magic number
 	uint32_t magic_number = btr.read(32);
 	if(magic_number != 0x42435001){
-		cout << "Error: unknown format, wrong magic number..." << "\n";
+		cerr << "Error: unknown format, wrong magic number..." << endl;
 		exit(1);
 	}
 
@@ -217,7 +216,7 @@ void HuffmanEngine::compress_p(string in_file){
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	TBBLeavesVector leaves_vect;
 	create_huffman_tree_p(histo, leaves_vect);
-	cerr << "[PAR] Albero creato\n";
+	cerr << "[PAR] Albero creato" << endl;
 
 	leaves_vect[0]->setRoot(true);
 
@@ -226,22 +225,22 @@ void HuffmanEngine::compress_p(string in_file){
 	DepthMap depthmap;
 	depth_assign_p(leaves_vect[0], depthmap);
 
-	cerr << "[PAR] Profondita' assegnate\n";
+	cerr << "[PAR] Profondita' assegnate" << endl;
 
 	// ordino la depthmap per profondità 
 	sort(depthmap.begin(), depthmap.end(), depth_compare);
 
-	cerr << "[PAR] Profondita' ordinate\n\n";
+	cerr << "[PAR] Profondita' ordinate" << endl;
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<Triplet> codes;
 	canonical_codes(depthmap, codes);
 
-	// stampa i codici canonici sulla console
-	cerr << "SYM\tCODE\tC_LEN\n";
-	for(unsigned i=0; i<codes.size(); ++i)
-		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
-	cerr << endl;
+	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
+	//cout << "SYM\tCODE\tC_LEN\n";
+	//for(unsigned i=0; i<codes.size(); ++i)
+	//	cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
+	//-----------------------------------------------------------------------------------
 	cerr << "[PAR] Ci sono " << codes.size() << " simboli" << endl;
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
@@ -250,7 +249,7 @@ void HuffmanEngine::compress_p(string in_file){
 		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
 	}
 
-	cout << "scrittura su file...\n";
+	cerr << "[PAR] Scrittura su file..." << endl;
 
 	// crea il file di output
 	BitWriter btw(out_f);
@@ -287,6 +286,6 @@ void HuffmanEngine::compress_p(string in_file){
 	in_f.close();
 	out_f.close();
 
-	cout << "fatto\n";
+	cerr << "[PAR] Fatto!" << endl;
 }
 
