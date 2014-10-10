@@ -248,7 +248,7 @@ public:
 };
 
 
-typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto;
+typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
 typedef tbb::concurrent_vector<TBBHuffNode*> TBBLeavesVector;
 
 

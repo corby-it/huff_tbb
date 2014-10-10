@@ -99,7 +99,6 @@ void HuffmanEngine::compress(string in_file){
 	in_f.unsetf (ifstream::skipws);
 
 	//creo un istogramma per i 256 possibili uint8_t
-
 	t0 = tick_count::now();
 	cont_t histo(256);
 	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), HistoIncr(histo));
@@ -157,7 +156,8 @@ void HuffmanEngine::compress(string in_file){
 	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
 	*/
 	//scrivo il magic number
-	btw.write(0x42435001, 32); //BCP
+	btw.write(0x42435001, 32); //BCP + 1 byte versione
+	// ---- qui metterei l'estensione originaria
 	// scrivo il numero di simboli
 	btw.write(depthmap.size(), 32);
 	// scrivo tutti i simboli seguiti dalle lunghezze
@@ -272,6 +272,7 @@ void HuffmanEngine::compress_p(string in_file){
 	*/
 	//scrivo il magic number
 	btw.write(0x42435001, 32);
+	//qui scriverei l'estensione
 	// scrivo il numero di simboli
 	btw.write(depthmap.size(), 32);
 	// scrivo tutti i simboli seguiti dalle lunghezze
