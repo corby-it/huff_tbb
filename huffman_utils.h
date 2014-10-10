@@ -101,7 +101,7 @@ double entropy_func (const double& entropy, const double& d) {
 		return entropy;
 }
 
-bool depth_compare(DepthMapElement first, DepthMapElement second){
+bool sdepth_compare(DepthMapElement first, DepthMapElement second){
 	return (first.first < second.first);
 }
 
@@ -172,7 +172,7 @@ void depth_assign(HuffNode* huff_node, DepthMap & depthmap){
 	}
 }
 
-void canonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
+void scanonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
 	Triplet curr_code;
 	curr_code.code = 0;
 	curr_code.code_len = depthmap[0].first;
