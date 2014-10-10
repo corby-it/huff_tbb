@@ -4,6 +4,7 @@
 //#include "huffman_engine.h"
 #include "tbb/tick_count.h"
 #include "par_huffman.h"
+#include "seq_huffman.h"
 
 using namespace std;
 using tbb::tick_count;
@@ -36,6 +37,7 @@ int main (int argc, char *argv[]) {
 
 	/*HuffmanEngine huff;*/
 	ParHuffman par_huff;
+	SeqHuffman seq_huff;
 
 	if(!shell.get_mode().compare("compression")) {
 
@@ -50,11 +52,12 @@ int main (int argc, char *argv[]) {
 			t1p = tick_count::now();
 			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 
-			//// --- Comprimi con compressione sequenziale
-			//t0s = tick_count::now();
-			//huff.compress(input_files[i]);
-			//t1s = tick_count::now();
-			//cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
+			// --- Comprimi con compressione sequenziale
+			t0s = tick_count::now();
+			//seq_huff.read_file(input_files[i]);
+			seq_huff.compress(input_files[i]);
+			t1s = tick_count::now();
+			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
 
 		}
 	}

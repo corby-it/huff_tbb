@@ -1,5 +1,5 @@
 
-#include <fstream>
+//#include <fstream>
 
 #include "huffman.h"
 
@@ -15,7 +15,7 @@ void Huffman::read_file(string filename){
 	ifstream file_in(filename, ifstream::in|ifstream::binary|fstream::ate);
 	// NON salta i whitespaces
 	file_in.unsetf (ifstream::skipws);
-
+	
 	// Salva la dimensione del file e torna all'inizio
 	_file_length = (uint32_t) file_in.tellg();
 	file_in.seekg(0, ios::beg);
