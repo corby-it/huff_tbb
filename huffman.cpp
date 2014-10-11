@@ -32,5 +32,9 @@ scrive in blocco sul file di output
 */
 void Huffman::write_on_file(vector<uint8_t>, string filename_out){
 
+	ofstream file_out(filename_out, fstream::out|fstream::binary);
+	file_out.write(reinterpret_cast<char*>(&_file_compressed[0]), _file_compressed.size());
+
+	file_out.close();
 }
 
