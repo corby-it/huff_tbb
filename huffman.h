@@ -13,7 +13,6 @@ class Huffman {
 private:
 
 public:
-	std::ifstream _in;
 	std::uint32_t _file_length;
 	std::vector<uint8_t> _file_vector;
 

@@ -13,11 +13,11 @@ void SeqHuffman::compress(string filename){
 	// utili per ottimizzazioni
 	tick_count t0, t1;
 
-	ifstream in_f(filename, ifstream::in|ifstream::binary);
+	ifstream _in(filename, ifstream::in|ifstream::binary);
 	string out_file(filename);
 
 	// NON salta i whitespaces
-	in_f.unsetf (ifstream::skipws);
+	_in.unsetf (ifstream::skipws);
 
 	// file di input e di output
 //	string out_file(filename);
@@ -28,7 +28,7 @@ void SeqHuffman::compress(string filename){
 	//creo un istogramma per i 256 possibili uint8_t
 	t0 = tick_count::now();
 	cont_t histo(256);
-	for_each (istream_iterator<uint8_t>(in_f), istream_iterator<uint8_t>(), HistoIncr(histo));
+	for_each (istream_iterator<uint8_t>(_in), istream_iterator<uint8_t>(), HistoIncr(histo));
 	t1 = tick_count::now();
 	cerr << "[SEQ] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
@@ -94,20 +94,20 @@ void SeqHuffman::compress(string filename){
 	}
 
 	// scrivo l'output compresso
-	// resetto in_f all'inizio
-	in_f.clear();
-	in_f.seekg(0, ios::beg);
-	in_f.unsetf (ifstream::skipws);
+	// resetto _in all'inizio
+	_in.clear();
+	_in.seekg(0, ios::beg);
+	_in.unsetf (ifstream::skipws);
 
-	while(in_f.good()){
-		tmp = in_f.get();
+	while(_in.good()){
+		tmp = _in.get();
 		btw.write(codes_map[tmp].first, codes_map[tmp].second);
 	}
 	btw.flush();
 	t1 = tick_count::now();
 	cerr << "[SEQ] La scrittura del file di output ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
-	in_f.close();
+	_in.close();
 	out_f.close();
 }
 
