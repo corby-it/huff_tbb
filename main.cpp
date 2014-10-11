@@ -48,13 +48,12 @@ int main (int argc, char *argv[]) {
 			t0p = tick_count::now();
 			par_huff.read_file(input_files[i]);
 			par_huff.compress(input_files[i]);
-			//huff.compress_p(input_files[i]);
 			t1p = tick_count::now();
 			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 
 			// --- Comprimi con compressione sequenziale
 			t0s = tick_count::now();
-			//seq_huff.read_file(input_files[i]);
+			seq_huff.read_file(input_files[i]);
 			seq_huff.compress(input_files[i]);
 			t1s = tick_count::now();
 			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;

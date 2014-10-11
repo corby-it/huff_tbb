@@ -22,6 +22,8 @@ void Huffman::read_file(string filename){
 	file_in.read(buffer, _file_length);
 	_file_vector.assign(buffer, buffer+_file_length);
 
+	file_in.close();
+
 }
 
 /*

@@ -95,7 +95,7 @@ void ParHuffman::compress(string filename){
 	}
 
 	// Scrittura del file di output
-	for (int i = 0; i < _file_length; i++)
+	for (size_t i = 0; i < _file_length; i++)
 		btw.write(codes_map[_file_vector[i]].first, codes_map[_file_vector[i]].second);
 	btw.flush();
 	t1 = tick_count::now();

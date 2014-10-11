@@ -13,23 +13,18 @@ using namespace tbb;
 void SeqHuffman::compress(string filename){
 	// utili per ottimizzazioni
 	tick_count t0, t1;
-
-	ifstream _in(filename, ifstream::in|ifstream::binary);
-	string out_file(filename);
-
-	// NON salta i whitespaces
-	_in.unsetf (ifstream::skipws);
-
-	// file di input e di output
-	//	string out_file(filename);
+	
+	// file di output
 	// converto l'estensione del file di output in ".bcp" 
+	string out_file(filename);
 	out_file.replace(out_file.size()-4, 4, ".bcp");
 	ofstream out_f(out_file, fstream::out|fstream::binary);
 
 	//creo un istogramma per i 256 possibili uint8_t
+	vector<uint32_t> histo(256);
 	t0 = tick_count::now();
-	cont_t histo(256);
-	for_each (istream_iterator<uint8_t>(_in), istream_iterator<uint8_t>(), HistoIncr(histo));
+	for(size_t i=0; i<_file_length; ++i)
+		histo[_file_vector[i]]++;
 	t1 = tick_count::now();
 	cerr << "[SEQ] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
@@ -75,7 +70,6 @@ void SeqHuffman::compress(string filename){
 	t0 = tick_count::now();
 	// crea il file di output
 	BitWriter btw(out_f);
-	uint8_t tmp;
 
 	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
 	* - un magic number di 4 byte per contraddistinguere il formato: BCP1 (in hex: 42 43 50 01) 
@@ -94,21 +88,13 @@ void SeqHuffman::compress(string filename){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	// scrivo l'output compresso
-	// resetto _in all'inizio
-	_in.clear();
-	_in.seekg(0, ios::beg);
-	_in.unsetf (ifstream::skipws);
-
-	while(_in.good()){
-		tmp = _in.get();
-		btw.write(codes_map[tmp].first, codes_map[tmp].second);
-	}
+	// Scrittura del file di output
+	for (size_t i = 0; i < _file_length; i++)
+		btw.write(codes_map[_file_vector[i]].first, codes_map[_file_vector[i]].second);
 	btw.flush();
 	t1 = tick_count::now();
 	cerr << "[SEQ] La scrittura del file di output ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
-	_in.close();
 	out_f.close();
 }
 
