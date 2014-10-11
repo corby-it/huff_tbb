@@ -32,7 +32,7 @@ public:
 	virtual void compress(std::string filename) = 0;
 
 	// Funzione virtual da implementare nelle classi reali
-	virtual void decompress() = 0;
+	virtual void decompress(std::string in_file, std::string out_file) = 0;
 };
 
 #endif /*HUFFMAN_H*/

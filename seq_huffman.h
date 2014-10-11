@@ -10,7 +10,7 @@ class SeqHuffman : public Huffman {
 public:
 
 	void compress(std::string filename);
-	void decompress();
+	void decompress(std::string in_file, std::string out_file);
 
 private:
 

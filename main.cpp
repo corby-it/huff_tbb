@@ -61,9 +61,11 @@ int main (int argc, char *argv[]) {
 
 		}
 	}
-	else;
-		//cout << "DECOMPRESS!" << endl;
-		//huff.decompress("prova.bcp", "prova.txt");
+	else{
+		cout << "DECOMPRESS!" << endl;
+		par_huff.decompress("prova.bcp", "prova.txt");
+		seq_huff.decompress("prova.bcp", "prova.txt");
+	}
 
 
 	system("pause");
