@@ -1,11 +1,11 @@
-#ifndef HUFFMAN_UTILS_H
-#define HUFFMAN_UTILS_H
+#ifndef SEQ_HUFFMAN_UTILS_H
+#define SEQ_HUFFMAN_UTILS_H
 
 #include <cstdint>
 #include <vector>
 #include <map>
 #include <algorithm> //std::sort
-#include "tbb\tbb.h"
+#include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "seq_huffman_node.h"
 
@@ -15,18 +15,6 @@ struct Triplet{
 	std::uint8_t symbol;
 	std::uint32_t code;
 	std::uint32_t code_len;
-};
-
-class HistoIncr {
-private:
-	std::vector<uint32_t>& _histo; 
-
-public:
-	HistoIncr (std::vector<uint32_t>& histo) : _histo(histo) {} 
-
-	void operator() (const std::uint8_t& val) {
-		_histo[val]++;
-	}
 };
 
 typedef std::vector<std::uint32_t> cont_t;
@@ -144,4 +132,4 @@ void scanonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
 	}
 }
 
-#endif /*HUFFMAN_UTILS_H*/
+#endif /*SEQ_HUFFMAN_UTILS_H*/

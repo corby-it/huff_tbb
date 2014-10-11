@@ -2,8 +2,8 @@
 #include <fstream>
 #include "bitwriter.h"
 #include "bitreader.h"
-#include "tbb\tbb.h"
-#include "tbb\concurrent_vector.h"
+#include "tbb/tbb.h"
+#include "tbb/concurrent_vector.h"
 #include "seq_huffman.h"
 #include "seq_huffman_utils.h"
 

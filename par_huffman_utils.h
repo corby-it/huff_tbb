@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 #include <algorithm> //std::sort
-#include "tbb\tbb.h"
+#include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "par_huffman_node.h"
 

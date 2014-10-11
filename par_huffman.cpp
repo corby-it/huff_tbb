@@ -7,8 +7,8 @@
 #include "bitwriter.h"
 #include "bitreader.h"
 
-#include "tbb\tbb.h"
-#include "tbb\concurrent_vector.h"
+#include "tbb/tbb.h"
+#include "tbb/concurrent_vector.h"
 
 using namespace std;
 using namespace tbb;

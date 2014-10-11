@@ -1,7 +1,7 @@
 #ifndef PAR_HUFFMAN_NODE
 #define PAR_HUFFMAN_NODE
 
-#include "tbb\tbb.h"
+#include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 
 class ParHuffNode {

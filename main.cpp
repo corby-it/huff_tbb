@@ -1,7 +1,6 @@
 #include "bitreader.h"
 #include "bitwriter.h"
 #include "cmd_line_interface.h"
-//#include "huffman_engine.h"
 #include "tbb/tick_count.h"
 #include "par_huffman.h"
 #include "seq_huffman.h"
@@ -35,7 +34,6 @@ int main (int argc, char *argv[]) {
 		exit(1);
 	}
 
-	/*HuffmanEngine huff;*/
 	ParHuffman par_huff;
 	SeqHuffman seq_huff;
 
