@@ -1,5 +1,5 @@
-#ifndef PAR_HUFFMAN_UTILS
-#define PAR_HUFFMAN_UTILS
+#ifndef PAR_HUFFMAN_UTILS_H
+#define PAR_HUFFMAN_UTILS_H
 
 #include <cstdint>
 #include <vector>
@@ -18,19 +18,21 @@ typedef std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMap;
 typedef std::pair<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMapElement;
 typedef std::uint8_t CodesMapKey;
 typedef std::pair<std::uint32_t,std::uint32_t> CodesMapValue;
+typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
+typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 
-struct Triplet{
+struct ParTriplet{
 	std::uint8_t symbol;
 	std::uint32_t code;
 	std::uint32_t code_len;
 };
 
-bool depth_compare(DepthMapElement first, DepthMapElement second){
+bool par_depth_compare(DepthMapElement first, DepthMapElement second){
 	return (first.first < second.first);
 }
 
-void canonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
-	Triplet curr_code;
+void par_canonical_codes(DepthMap & depthmap, std::vector<ParTriplet>& codes){
+	ParTriplet curr_code;
 	curr_code.code = 0;
 	curr_code.code_len = depthmap[0].first;
 	curr_code.symbol = depthmap[0].second;
@@ -52,11 +54,7 @@ void canonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
 
 }
 
-typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
-typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
-
-
-void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
+void par_create_huffman_tree(TBBHisto histo, TBBLeavesVector& leaves_vect){
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	parallel_for(tbb::blocked_range<int>( 0, histo.size()), [&](const tbb::blocked_range<int>& range) {
@@ -123,7 +121,7 @@ void create_huffman_tree_p(TBBHisto histo, TBBLeavesVector& leaves_vect){
 	//std::cerr << "Arrivo fino a qui: punto 3" << std::endl;
 }
 
-void depth_assign_p(ParHuffNode* tbb_huff_node, DepthMap & depthmap){
+void par_depth_assign(ParHuffNode* tbb_huff_node, DepthMap & depthmap){
 	if(tbb_huff_node->isLeaf()){
 		depthmap.push_back(DepthMapElement(tbb_huff_node->getDepth(), tbb_huff_node->getSymb()));
 		return;
@@ -132,18 +130,18 @@ void depth_assign_p(ParHuffNode* tbb_huff_node, DepthMap & depthmap){
 			tbb_huff_node->getLeft()->setDepth(1);
 			tbb_huff_node->getRight()->setDepth(1);
 
-			depth_assign_p(tbb_huff_node->getLeft(), depthmap);
-			depth_assign_p(tbb_huff_node->getRight(), depthmap);
+			par_depth_assign(tbb_huff_node->getLeft(), depthmap);
+			par_depth_assign(tbb_huff_node->getRight(), depthmap);
 		} else {
 			tbb_huff_node->getLeft()->setDepth(tbb_huff_node->getDepth());
 			tbb_huff_node->getLeft()->increaseDepth(1);
 			tbb_huff_node->getRight()->setDepth(tbb_huff_node->getDepth());
 			tbb_huff_node->getRight()->increaseDepth(1);
 
-			depth_assign_p(tbb_huff_node->getLeft(), depthmap);
-			depth_assign_p(tbb_huff_node->getRight(), depthmap);
+			par_depth_assign(tbb_huff_node->getLeft(), depthmap);
+			par_depth_assign(tbb_huff_node->getRight(), depthmap);
 		}
 	}
 }
 
-#endif /*PAR_HUFFMAN_UTILS*/
+#endif /*PAR_HUFFMAN_UTILS_H*/

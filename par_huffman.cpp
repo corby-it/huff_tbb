@@ -37,7 +37,7 @@ void ParHuffman::compress(string filename){
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	t0 = tick_count::now();
 	TBBLeavesVector leaves_vect;
-	create_huffman_tree_p(histo, leaves_vect);
+	par_create_huffman_tree(histo, leaves_vect);
 	t1 = tick_count::now();
 	cerr << "[PAR] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
@@ -46,18 +46,18 @@ void ParHuffman::compress(string filename){
 	// creo una depthmap, esplorando tutto l'albero, per sapere a che profondità si trovano i simboli
 	// la depthmap contiene le coppie <lunghezza_simbolo, simbolo>
 	DepthMap depthmap;
-	depth_assign_p(leaves_vect[0], depthmap);
+	par_depth_assign(leaves_vect[0], depthmap);
 
 	cerr << "[PAR] Profondita' assegnate" << endl;
 
 	// ordino la depthmap per profondità 
-	sort(depthmap.begin(), depthmap.end(), depth_compare);
+	sort(depthmap.begin(), depthmap.end(), par_depth_compare);
 
 	cerr << "[PAR] Profondita' ordinate" << endl;
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<Triplet> codes;
-	canonical_codes(depthmap, codes);
+	vector<ParTriplet> codes;
+	par_canonical_codes(depthmap, codes);
 
 	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
 	//cout << "SYM\tCODE\tC_LEN\n";
@@ -134,8 +134,8 @@ void ParHuffman::decompress (string in_file, string out_file){
 		depthmap.push_back( DepthMapElement(btr.read(8), btr.read(8)) );
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<Triplet> codes;
-	canonical_codes(depthmap, codes);
+	vector<ParTriplet> codes;
+	par_canonical_codes(depthmap, codes);
 
 	// crea una mappa <codice, <simbolo, lunghezza_codice>>
 	CodesMap codes_map;

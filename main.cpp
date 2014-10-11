@@ -2,6 +2,7 @@
 #include "bitwriter.h"
 #include "cmd_line_interface.h"
 #include "tbb/tick_count.h"
+
 #include "par_huffman.h"
 #include "seq_huffman.h"
 
@@ -10,19 +11,6 @@ using tbb::tick_count;
 
 int main (int argc, char *argv[]) {
 
-
-	/*
-	Come provare se funziona:
-	Compressione -> huffman_tbb.exe -c prova.txt
-	oppure huffman_tbb.exe --compress prova.txt
-	Decompressione -> huffman_tbb.exe -d prova.bcp
-	oppure huffman_tbb.exe --decompress prova.bcp,
-
-	In teoria dovrebbe dare errore se si sbagliano i parametri, se il file di input non esiste,
-	se ci sono troppi pochi argomenti ecc ecc 
-
-	I file di prova sono in Debug, quindi per provare se va bisogna entrare in Debug
-	*/
 
 	tick_count t0p, t1p, t0s, t1s;
 

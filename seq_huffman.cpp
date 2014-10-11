@@ -31,7 +31,7 @@ void SeqHuffman::compress(string filename){
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	t0 = tick_count::now();
 	LeavesVector leaves_vect;
-	create_huffman_tree(histo, leaves_vect);
+	seq_create_huffman_tree(histo, leaves_vect);
 	t1 = tick_count::now();
 	cerr << "[SEQ] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
@@ -40,18 +40,18 @@ void SeqHuffman::compress(string filename){
 	// creo una depthmap, esplorando tutto l'albero, per sapere a che profondità si trovano i simboli
 	// la depthmap contiene le coppie <lunghezza_simbolo, simbolo>
 	DepthMap depthmap;
-	depth_assign(leaves_vect[0], depthmap);
+	seq_depth_assign(leaves_vect[0], depthmap);
 
 	cerr << "[SEQ] Profondita' assegnate\n";
 
 	// ordino la depthmap per profondità 
-	sort(depthmap.begin(), depthmap.end(), sdepth_compare);
+	sort(depthmap.begin(), depthmap.end(), seq_depth_compare);
 
 	cerr << "[SEQ] Profondita' ordinate" << endl;
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<Triplet> codes;
-	scanonical_codes(depthmap, codes);
+	vector<SeqTriplet> codes;
+	seq_canonical_codes(depthmap, codes);
 
 	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
 	//cout << "SYM\tCODE\tC_LEN\n";
@@ -128,8 +128,8 @@ void SeqHuffman::decompress (string in_file, string out_file){
 		depthmap.push_back( DepthMapElement(btr.read(8), btr.read(8)) );
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<Triplet> codes;
-	scanonical_codes(depthmap, codes);
+	vector<SeqTriplet> codes;
+	seq_canonical_codes(depthmap, codes);
 
 	// crea una mappa <codice, <simbolo, lunghezza_codice>>
 	CodesMap codes_map;

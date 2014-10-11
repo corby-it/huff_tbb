@@ -11,7 +11,7 @@
 
 // CLASSES
 
-struct Triplet{
+struct SeqTriplet{
 	std::uint8_t symbol;
 	std::uint32_t code;
 	std::uint32_t code_len;
@@ -32,18 +32,11 @@ typedef std::pair<std::uint32_t,std::uint32_t> CodesMapValue;
 
 // METHODS
 
-double entropy_func (const double& entropy, const double& d) {
-	if (d>0.0)
-		return entropy-d*log(d)/log(2.0);
-	else
-		return entropy;
-}
-
-bool sdepth_compare(DepthMapElement first, DepthMapElement second){
+bool seq_depth_compare(DepthMapElement first, DepthMapElement second){
 	return (first.first < second.first);
 }
 
-void create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
+void seq_create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	for (std::size_t i=0;i<histo.size();++i) {
@@ -87,7 +80,7 @@ void create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 	}
 }
 
-void depth_assign(SeqHuffNode* huff_node, DepthMap & depthmap){
+void seq_depth_assign(SeqHuffNode* huff_node, DepthMap & depthmap){
 	if(huff_node->isLeaf()){
 		depthmap.push_back(DepthMapElement(huff_node->getDepth(), huff_node->getSymb()));
 		return;
@@ -96,22 +89,22 @@ void depth_assign(SeqHuffNode* huff_node, DepthMap & depthmap){
 			huff_node->getLeft()->setDepth(1);
 			huff_node->getRight()->setDepth(1);
 
-			depth_assign(huff_node->getLeft(), depthmap);
-			depth_assign(huff_node->getRight(), depthmap);
+			seq_depth_assign(huff_node->getLeft(), depthmap);
+			seq_depth_assign(huff_node->getRight(), depthmap);
 		} else {
 			huff_node->getLeft()->setDepth(huff_node->getDepth());
 			huff_node->getLeft()->increaseDepth(1);
 			huff_node->getRight()->setDepth(huff_node->getDepth());
 			huff_node->getRight()->increaseDepth(1);
 
-			depth_assign(huff_node->getLeft(), depthmap);
-			depth_assign(huff_node->getRight(), depthmap);
+			seq_depth_assign(huff_node->getLeft(), depthmap);
+			seq_depth_assign(huff_node->getRight(), depthmap);
 		}
 	}
 }
 
-void scanonical_codes(DepthMap & depthmap, std::vector<Triplet>& codes){
-	Triplet curr_code;
+void seq_canonical_codes(DepthMap & depthmap, std::vector<SeqTriplet>& codes){
+	SeqTriplet curr_code;
 	curr_code.code = 0;
 	curr_code.code_len = depthmap[0].first;
 	curr_code.symbol = depthmap[0].second;
