@@ -25,11 +25,6 @@ typedef std::vector<SeqHuffNode*> LeavesVector;
 typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
 typedef std::pair<unsigned,std::uint8_t> DepthMapElement;
 
-typedef std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMap;
-typedef std::pair<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMapElement;
-typedef std::uint8_t CodesMapKey;
-typedef std::pair<std::uint32_t,std::uint32_t> CodesMapValue;
-
 // METHODS
 
 bool seq_depth_compare(DepthMapElement first, DepthMapElement second){

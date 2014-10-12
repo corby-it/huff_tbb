@@ -42,14 +42,14 @@ int main (int argc, char *argv[]) {
 			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 
 			// --- Comprimi con compressione sequenziale
-			t0s = tick_count::now();
+			/*t0s = tick_count::now();
 			
 			seq_huff.read_file(input_files[i]);
 			seq_huff.compress(input_files[i]);
 			seq_huff.write_on_file();
 
 			t1s = tick_count::now();
-			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
+			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;*/
 
 		}
 	}
@@ -66,14 +66,14 @@ int main (int argc, char *argv[]) {
 			cerr << "[PAR] La decompressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 
 			// --- Decomprimi con decompressione sequenziale
-			t0s = tick_count::now();
+			/*t0s = tick_count::now();
 			
 			seq_huff.read_file(input_files[i]);
 			seq_huff.decompress(input_files[i]);
 			seq_huff.write_on_file();
 
 			t1s = tick_count::now();
-			cerr << "[SEQ] La decompressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
+			cerr << "[SEQ] La decompressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;*/
 		}
 	}
 

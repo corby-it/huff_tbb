@@ -14,10 +14,6 @@
 //---------------------------------------------------------------------------------------------
 typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
 typedef std::pair<unsigned,std::uint8_t> DepthMapElement;
-typedef std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMap;
-typedef std::pair<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> CodesMapElement;
-typedef std::uint8_t CodesMapKey;
-typedef std::pair<std::uint32_t,std::uint32_t> CodesMapValue;
 typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
 typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 

@@ -60,9 +60,9 @@ void SeqHuffman::compress(string filename){
 	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << endl;
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
-	CodesMap codes_map;
+	map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
 	for(unsigned i=0; i<codes.size(); ++i){
-		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
+		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
 	}
 
 	cout << "[SEQ] Scrittura su file..." << endl;
@@ -78,7 +78,6 @@ void SeqHuffman::compress(string filename){
 	* - seguono gli n simboli:
 	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
 	*/
-
 	//scrivo il magic number
 	btw.write(HUF_MAGIC_NUMBER, 32); //BCP + 1 byte versione
 	// scrivo la dimensione del nome del file originale
@@ -95,8 +94,10 @@ void SeqHuffman::compress(string filename){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	// Scrittura del file di output
+	// Scrittura del file di output (nel vector)
 	for (size_t i = 0; i < _file_length; i++)
+		//codes_map[_file_in[i]].first è il codice del simbolo _file_in[i]
+		//codes_map[_file_in[i]].second è la lunghezza del codice del simbolo _file_in[i]
 		btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
 
 	btw.flush();
@@ -129,17 +130,16 @@ void SeqHuffman::decompress (string filename){
 	DepthMap depthmap;
 
 	for(unsigned i=0; i<tot_symbols; ++i)
-		depthmap.push_back( DepthMapElement(btr.read(8), btr.read(8)) );
+		depthmap.push_back(DepthMapElement(btr.read(8), btr.read(8)));
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<SeqTriplet> codes;
 	seq_canonical_codes(depthmap, codes);
 
 	// crea una mappa <codice, <simbolo, lunghezza_codice>>
-	CodesMap codes_map;
-
+	map<uint32_t, pair<uint8_t,uint32_t>> codes_map; 
 	for(unsigned i=0; i<codes.size(); ++i)
-		codes_map.insert(CodesMapElement(codes[i].code, CodesMapValue(codes[i].symbol, codes[i].code_len)));
+		codes_map.insert(pair<uint32_t, pair<uint8_t,uint32_t>>(codes[i].code,pair<uint8_t,uint32_t>(codes[i].symbol, codes[i].code_len)));
 
 	// leggo il file compresso e scrivo l'output
 	while(btr.good()){
@@ -159,7 +159,7 @@ void SeqHuffman::decompress (string filename){
 		}
 
 		// se esco dal while ho trovato un codice, lo leggo, e lo scrivo sul file di output
-		CodesMapValue tmp_sym_pair = codes_map[tmp_code];
+		pair<uint32_t,uint32_t> tmp_sym_pair = codes_map[tmp_code];
 		btw.write(tmp_sym_pair.first, 8);
 	}
 	btw.flush();

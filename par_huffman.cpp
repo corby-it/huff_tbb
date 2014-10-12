@@ -65,9 +65,9 @@ void ParHuffman::compress(string filename){
 	cerr << "[PAR] Ci sono " << codes.size() << " simboli" << endl;
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
-	CodesMap codes_map;
+	map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
 	for(unsigned i=0; i<codes.size(); ++i){
-		codes_map.insert(CodesMapElement(codes[i].symbol, CodesMapValue(codes[i].code,codes[i].code_len)));
+		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
 	}
 
 	cerr << "[PAR] Scrittura su file..." << endl;
@@ -133,17 +133,16 @@ void ParHuffman::decompress (string filename){
 	DepthMap depthmap;
 
 	for(unsigned i=0; i<tot_symbols; ++i)
-		depthmap.push_back( DepthMapElement(btr.read(8), btr.read(8)) );
+		depthmap.push_back(DepthMapElement(btr.read(8), btr.read(8)));
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<ParTriplet> codes;
 	par_canonical_codes(depthmap, codes);
 
 	// crea una mappa <codice, <simbolo, lunghezza_codice>>
-	CodesMap codes_map;
-
+	map<uint32_t, pair<uint8_t,uint32_t>> codes_map; 
 	for(unsigned i=0; i<codes.size(); ++i)
-		codes_map.insert(CodesMapElement(codes[i].code, CodesMapValue(codes[i].symbol, codes[i].code_len)));
+		codes_map.insert(pair<uint32_t, pair<uint8_t,uint32_t>>(codes[i].code,pair<uint8_t,uint32_t>(codes[i].symbol, codes[i].code_len)));
 
 	// leggo il file compresso e scrivo l'output
 	while(btr.good()){
@@ -157,13 +156,13 @@ void ParHuffman::decompress (string filename){
 		// questo modo mi sa che è super inefficiente... sicuramente si può fare di meglio
 		while(codes_map.find(tmp_code) == codes_map.end() ||
 			(codes_map.find(tmp_code) != codes_map.end() && tmp_code_len != codes_map[tmp_code].second )){
-				//cout << btr.tell_index() << endl;
-				tmp_code = (tmp_code << 1) | (1 & btr.read(1));
+
+				tmp_code = (tmp_code << 1) | (1 & btr.read_bit());
 				tmp_code_len++;
 		}
 
 		// se esco dal while ho trovato un codice, lo leggo, e lo scrivo sul file di output
-		CodesMapValue tmp_sym_pair = codes_map[tmp_code];
+		pair<uint32_t,uint32_t> tmp_sym_pair = codes_map[tmp_code];
 		btw.write(tmp_sym_pair.first, 8);
 	}
 	btw.flush();
