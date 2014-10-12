@@ -25,31 +25,56 @@ int main (int argc, char *argv[]) {
 	ParHuffman par_huff;
 	SeqHuffman seq_huff;
 
+	vector<string> input_files = shell.get_files();
+
 	if(!shell.get_mode().compare("compression")) {
 
-		vector<string> input_files = shell.get_files();
 		for(unsigned i=0; i<input_files.size(); ++i){
 
-			//// --- Comprimi con compressione parallela
+			// --- Comprimi con compressione parallela
 			t0p = tick_count::now();
+			
 			par_huff.read_file(input_files[i]);
 			par_huff.compress(input_files[i]);
+			par_huff.write_on_file();
+
 			t1p = tick_count::now();
 			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 
 			// --- Comprimi con compressione sequenziale
 			t0s = tick_count::now();
+			
 			seq_huff.read_file(input_files[i]);
 			seq_huff.compress(input_files[i]);
+			seq_huff.write_on_file();
+
 			t1s = tick_count::now();
 			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
 
 		}
 	}
 	else{
-		cout << "DECOMPRESS!" << endl;
-		par_huff.decompress("prova.bcp", "prova.txt");
-		seq_huff.decompress("prova.bcp", "prova.txt");
+		for(unsigned i=0; i<input_files.size(); ++i){
+			// --- Decomprimi con decompressione parallela
+			t0p = tick_count::now();
+
+			par_huff.read_file(input_files[i]);
+			par_huff.decompress(input_files[i]);
+			par_huff.write_on_file();
+
+			t1p = tick_count::now();
+			cerr << "[PAR] La decompressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
+
+			// --- Decomprimi con decompressione sequenziale
+			t0s = tick_count::now();
+			
+			seq_huff.read_file(input_files[i]);
+			seq_huff.decompress(input_files[i]);
+			seq_huff.write_on_file();
+
+			t1s = tick_count::now();
+			cerr << "[SEQ] La decompressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
+		}
 	}
 
 

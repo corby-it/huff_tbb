@@ -4,9 +4,12 @@
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <sstream>
 #include <fstream>
 
 // CLASSE ASTRATTA
+
+#define HUF_MAGIC_NUMBER 0x42435001
 
 class Huffman {
 
@@ -14,8 +17,11 @@ private:
 
 public:
 	std::uint32_t _file_length;
-	std::vector<uint8_t> _file_vector;
-	std::vector<uint8_t> _file_compressed;
+	std::vector<uint8_t> _file_in;
+	std::vector<uint8_t> _file_out;
+
+	std::string _original_filename;
+	std::string _output_filename;
 
 	/*
 	Funzione che legge il file in input, riempie un vector<uint8_t> con il contenuto del file
@@ -27,13 +33,14 @@ public:
 	Funzione che prende il risultato della comrpessione da un vector<uint8_t> e lo
 	scrive in blocco sul file di output
 	*/
-	void write_on_file(std::vector<uint8_t>, std::string filename_out);
+	void write_on_file();
 
 	// Funzione virtual da implementare nelle classi reali
 	virtual void compress(std::string filename) = 0;
 
 	// Funzione virtual da implementare nelle classi reali
-	virtual void decompress(std::string in_file, std::string out_file) = 0;
+	// virtual void decompress(std::string in_file, std::string out_file) = 0;
+	virtual void decompress(std::string filename) = 0;
 };
 
 #endif /*HUFFMAN_H*/
