@@ -70,7 +70,7 @@ void ParHuffman::compress(string filename){
 		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
 	}
 
-	cerr << "[PAR] Scrittura su file..." << endl;
+	cerr << "[PAR] Scrittura su file";
 	t0 = tick_count::now();
 	// crea il file di output
 	BitWriter btw(_file_out);
@@ -101,8 +101,11 @@ void ParHuffman::compress(string filename){
 	}
 
 	// Scrittura del file di output
-	for (size_t i = 0; i < _file_length; i++)
+	for (size_t i = 0; i < _file_length; i++){
 		btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
+		if(i%(_file_length/10)==0) cerr << " .";
+	}
+	cerr << endl;
 	btw.flush();
 	t1 = tick_count::now();
 	cerr << "[PAR] La scrittura del file di output ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
