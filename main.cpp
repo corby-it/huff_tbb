@@ -11,6 +11,12 @@ using tbb::tick_count;
 
 int main (int argc, char *argv[]) {
 
+	SYSTEM_INFO info_sistema;
+	GetSystemInfo(&info_sistema);
+
+	int numeroCPU = info_sistema.dwNumberOfProcessors;
+	cout << numeroCPU  << endl;
+
 
 	tick_count t0p, t1p, t0s, t1s;
 
