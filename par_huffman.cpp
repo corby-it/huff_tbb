@@ -23,19 +23,21 @@ void ParHuffman::compress(string filename){
 
 	// Creazione dell'istogramma in parallelo
 	t0 = tick_count::now();
-	TBBHisto histo(256);
-	parallel_for(blocked_range<int>( 0, _file_length, 10000 ), [&](const blocked_range<int>& range) {
-		for( int i=range.begin(); i!=range.end(); ++i ){
-			histo[_file_in[i]]++;
-		}
-	});
+	TBBHistoReduce tbbhr;
+	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+_file_length ), tbbhr);
+	//TBBHisto histo(256);
+	//parallel_for(blocked_range<int>( 0, _file_length, 10000 ), [&](const blocked_range<int>& range) {
+	//	for( int i=range.begin(); i!=range.end(); ++i ){
+	//		histo[_file_in[i]]++;
+	//	}
+	//});
 	t1 = tick_count::now();
 	cerr << "[PAR] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	t0 = tick_count::now();
 	TBBLeavesVector leaves_vect;
-	par_create_huffman_tree(histo, leaves_vect);
+	par_create_huffman_tree(tbbhr._histo, leaves_vect);
 	t1 = tick_count::now();
 	cerr << "[PAR] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 

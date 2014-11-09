@@ -7,6 +7,8 @@
 #include <algorithm> //std::sort
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
+#include "tbb/parallel_reduce.h"
+#include "tbb/blocked_range.h"
 #include "par_huffman_node.h"
 
 //---------------------------------------------------------------------------------------------
@@ -16,6 +18,38 @@ typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
 typedef std::pair<unsigned,std::uint8_t> DepthMapElement;
 typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
 typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
+
+
+struct TBBHistoReduce{
+	std::vector<tbb::atomic<std::uint32_t>> _histo; // concurrent_vector??
+
+	TBBHistoReduce() {
+		tbb::atomic<uint32_t> j;
+		j = 0;
+		for(std::size_t i = 0; i<256; ++i)
+			_histo.push_back(j);
+	}
+
+	TBBHistoReduce(TBBHistoReduce& tbbhr, tbb::split) {
+		tbb::atomic<uint32_t> j;
+		j = 0;
+		for(std::size_t i = 0; i<256; ++i)
+			_histo.push_back(j);
+	}
+
+	void operator()(const tbb::blocked_range<std::uint8_t*>& r){
+		for(std::uint8_t* u=r.begin(); u!=r.end(); u++)
+			_histo[*u]++;
+		
+	}
+
+	void join(TBBHistoReduce& tbbhr){
+		for(std::size_t i=0; i<256; ++i)
+			_histo[i] += tbbhr._histo[i];
+		/*std::transform(_histo.begin(), _histo.end(), tbbhr.begin(), 
+                   std::back_inserter(_histo), std::plus<uint8_t>());*/
+	}
+};
 
 struct ParTriplet{
 	std::uint8_t symbol;
