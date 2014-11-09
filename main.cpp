@@ -19,6 +19,7 @@ int main (int argc, char *argv[]) {
 
 
 	tick_count t0p, t1p, t0s, t1s;
+	tick_count t01s, t02s, t01p, t02p;
 
 	CMDLineInterface shell(argc, argv);
 
@@ -39,21 +40,23 @@ int main (int argc, char *argv[]) {
 
 			// Comprimi con compressione sequenziale
 			t0s = tick_count::now();
-			
 			seq_huff.read_file(input_files[i]);
 			seq_huff.compress(input_files[i]);
+			t01s = tick_count::now();
 			seq_huff.write_on_file();
-
+			t02s = tick_count::now();
+			cerr << "[SEQ] Il trasferimento del buffer su HDD ha impiegato " << (t02s - t01s).seconds() << " sec" << endl << endl;
 			t1s = tick_count::now();
 			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
 
 			// --- Comprimi con compressione parallela
 			t0p = tick_count::now();
-			
 			par_huff.read_file(input_files[i]);
 			par_huff.compress(input_files[i]);
+			t01p = tick_count::now();
 			par_huff.write_on_file();
-
+			t02p = tick_count::now();
+			cerr << "[PAR] Il trasferimento del buffer su HDD ha impiegato " << (t02p - t01p).seconds() << " sec" << endl << endl;
 			t1p = tick_count::now();
 			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 

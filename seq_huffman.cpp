@@ -99,13 +99,13 @@ void SeqHuffman::compress(string filename){
 		//codes_map[_file_in[i]].first è il codice del simbolo _file_in[i]
 		//codes_map[_file_in[i]].second è la lunghezza del codice del simbolo _file_in[i]
 		btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
-		if(i%(_file_length/10)==0) cerr << " .";
+		//if(i%(_file_length/10)==0) cerr << " .";
 	}
 	cerr << endl;
 
 	btw.flush();
 	t1 = tick_count::now();
-	cerr << "[SEQ] La scrittura del file di output ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+	cerr << "[SEQ] La scrittura del file di output su buffer ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 }
 
