@@ -24,7 +24,7 @@ void ParHuffman::compress(string filename){
 	// Creazione dell'istogramma in parallelo
 	t0 = tick_count::now();
 	TBBHistoReduce tbbhr;
-	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+_file_length ), tbbhr);
+	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+_file_length ), tbbhr, affinity_partitioner());
 	//TBBHisto histo(256);
 	//parallel_for(blocked_range<int>( 0, _file_length, 10000 ), [&](const blocked_range<int>& range) {
 	//	for( int i=range.begin(); i!=range.end(); ++i ){

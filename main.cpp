@@ -15,7 +15,7 @@ int main (int argc, char *argv[]) {
 	GetSystemInfo(&info_sistema);
 
 	int numeroCPU = info_sistema.dwNumberOfProcessors;
-	cout << numeroCPU  << endl;
+	cout << "Num cores: " << numeroCPU  << endl << endl;
 
 
 	tick_count t0p, t1p, t0s, t1s;

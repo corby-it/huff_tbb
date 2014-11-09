@@ -11,6 +11,7 @@
 #include "tbb/blocked_range.h"
 #include "par_huffman_node.h"
 
+
 //---------------------------------------------------------------------------------------------
 // ----------- DEFINITIONS AND METHODS FOR PARALLEL EXECUTION----------------------------------
 //---------------------------------------------------------------------------------------------
@@ -38,7 +39,7 @@ struct TBBHistoReduce{
 	}
 
 	void operator()(const tbb::blocked_range<std::uint8_t*>& r){
-		for(std::uint8_t* u=r.begin(); u!=r.end(); u++)
+		for(std::uint8_t* u=r.begin(); u!=r.end(); ++u)
 			_histo[*u]++;
 		
 	}
@@ -46,8 +47,6 @@ struct TBBHistoReduce{
 	void join(TBBHistoReduce& tbbhr){
 		for(std::size_t i=0; i<256; ++i)
 			_histo[i] += tbbhr._histo[i];
-		/*std::transform(_histo.begin(), _histo.end(), tbbhr.begin(), 
-                   std::back_inserter(_histo), std::plus<uint8_t>());*/
 	}
 };
 
