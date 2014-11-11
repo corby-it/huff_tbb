@@ -49,7 +49,7 @@ int main (int argc, char *argv[]) {
 				t1p = tick_count::now();
 				cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
 			}
-		} else {
+		} //else {
 			for(unsigned i=0; i<input_files.size(); ++i){
 				// Comprimi con compressione sequenziale
 				t0s = tick_count::now();
@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
 				cerr << "[SEQ] Il trasferimento del buffer su HDD ha impiegato " << (t02s - t01s).seconds() << " sec" << endl << endl;
 				t1s = tick_count::now();
 				cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
-			}
+			//}
 		}
 			
 	}

@@ -10,6 +10,8 @@
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 
+#include <string>
+#include <utility> // pair
 using namespace std;
 using namespace tbb;
 
@@ -60,9 +62,9 @@ void ParHuffman::compress(string filename){
 	par_canonical_codes(depthmap, codes);
 
 	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
-	//cout << "SYM\tCODE\tC_LEN\n";
-	//for(unsigned i=0; i<codes.size(); ++i)
-	//	cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;
+	/*cout << "SYM\tCODE\tC_LEN\n";
+	for(unsigned i=0; i<codes.size(); ++i)
+		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;*/
 	//-----------------------------------------------------------------------------------
 	cerr << "[PAR] Ci sono " << codes.size() << " simboli" << endl;
 
@@ -85,7 +87,6 @@ void ParHuffman::compress(string filename){
 	* - seguono gli n simboli:
 	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
 	*/
-
 	//scrivo il magic number
 	btw.write(HUF_MAGIC_NUMBER, 32);
 	// scrivo la dimensione del nome del file originale
@@ -102,22 +103,28 @@ void ParHuffman::compress(string filename){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	// Scrittura del file di output
-	for (size_t i = 0; i < _file_length; i++){
-		btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
-		//if(i%(_file_length/10)==0) cerr << " .";
-	}
+	//// Scrittura del file di output
+	//for (size_t i = 0; i < _file_length; i++){
+	//	btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
+	//	//if(i%(_file_length/10)==0) cerr << " .";
+	//}
 	//MEMENTO
-	//parallel_for(blocked_range<int>( 0, _file_length, 10000 ), [&](const blocked_range<int>& range) {
-	//	for( int i=range.begin(); i!=range.end(); ++i ){
-	//		histo[_file_in[i]]++;
-	//	}
-	//});
+	//map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	vector<pair<uint32_t, uint32_t>> buffer_map(_file_length);
+	parallel_for(blocked_range<int>( 0, _file_length, 10000), [&](const blocked_range<int>& range) {
+		for( int i=range.begin(); i!=range.end(); ++i ){
+			pair<uint32_t,uint32_t> element;
+			element = codes_map[_file_in[i]];
+			buffer_map[i].first = element.first;
+			buffer_map[i].second = element.second;
+		}
+	});
+	for (size_t i = 0; i < _file_length; i++)
+		btw.write(buffer_map[i].first, buffer_map[i].second);
 
-	cerr << endl;
 	btw.flush();
 	t1 = tick_count::now();
-	cerr << "[PAR] La scrittura del file di output su buffer ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+	cerr << endl << "[PAR] La scrittura del file di output su buffer ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 }
 

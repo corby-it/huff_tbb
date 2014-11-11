@@ -6,6 +6,7 @@
 #include "tbb/concurrent_vector.h"
 #include "seq_huffman.h"
 #include "seq_huffman_utils.h"
+#include <utility> // pair
 
 using namespace std;
 using namespace tbb;
@@ -98,7 +99,9 @@ void SeqHuffman::compress(string filename){
 	for (size_t i = 0; i < _file_length; i++){
 		//codes_map[_file_in[i]].first è il codice del simbolo _file_in[i]
 		//codes_map[_file_in[i]].second è la lunghezza del codice del simbolo _file_in[i]
-		btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
+		pair<uint32_t,uint32_t> element;
+		element = codes_map[_file_in[i]];
+		btw.write(element.first, element.second);
 		//if(i%(_file_length/10)==0) cerr << " .";
 	}
 	cerr << endl;
