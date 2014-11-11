@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include <algorithm> //std::sort
+#include <algorithm> //std::sort, fill
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "tbb/parallel_reduce.h"
@@ -22,20 +22,19 @@ typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 
 
 struct TBBHistoReduce{
-	std::vector<tbb::atomic<std::uint32_t>> _histo; // concurrent_vector??
+	std::vector<tbb::atomic<std::uint32_t>> _histo; 
 
 	TBBHistoReduce() {
 		tbb::atomic<uint32_t> j;
 		j = 0;
-		for(std::size_t i = 0; i<256; ++i)
-			_histo.push_back(j);
+		_histo.assign(256,j);
 	}
 
 	TBBHistoReduce(TBBHistoReduce& tbbhr, tbb::split) {
 		tbb::atomic<uint32_t> j;
 		j = 0;
-		for(std::size_t i = 0; i<256; ++i)
-			_histo.push_back(j);
+		_histo.assign(256,j);
+
 	}
 
 	void operator()(const tbb::blocked_range<std::uint8_t*>& r){

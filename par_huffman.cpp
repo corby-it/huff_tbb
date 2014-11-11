@@ -23,16 +23,10 @@ void ParHuffman::compress(string filename){
 	_output_filename = _original_filename;
 	_output_filename.replace(_output_filename.size()-4, 4, ".bcp");
 
-	// Creazione dell'istogramma in parallelo
+	// Creazione dell'istogramma in parallelo con parallel_reduce
 	t0 = tick_count::now();
 	TBBHistoReduce tbbhr;
-	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+_file_length ), tbbhr, affinity_partitioner());
-	//TBBHisto histo(256);
-	//parallel_for(blocked_range<int>( 0, _file_length, 10000 ), [&](const blocked_range<int>& range) {
-	//	for( int i=range.begin(); i!=range.end(); ++i ){
-	//		histo[_file_in[i]]++;
-	//	}
-	//});
+	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+_file_length), tbbhr);
 	t1 = tick_count::now();
 	cerr << "[PAR] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
@@ -40,6 +34,7 @@ void ParHuffman::compress(string filename){
 	t0 = tick_count::now();
 	TBBLeavesVector leaves_vect;
 	par_create_huffman_tree(tbbhr._histo, leaves_vect);
+	//par_create_huffman_tree(histo, leaves_vect);
 	t1 = tick_count::now();
 	cerr << "[PAR] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
@@ -103,8 +98,7 @@ void ParHuffman::compress(string filename){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	//MEMENTO
-	//map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	//MEMENTO map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
 	// Scrittura del vettore di output
 	cerr << endl << "DEB1" << endl;
 	cerr << "Dimensione del pair: " << sizeof(pair<uint32_t, uint32_t>) << endl;
@@ -122,8 +116,8 @@ void ParHuffman::compress(string filename){
 	});
 	for (size_t i = 0; i < _file_length; i++)
 		btw.write(buffer_map[i].first, buffer_map[i].second);
-
 	btw.flush();
+
 	t1 = tick_count::now();
 	cerr << endl << "[PAR] La scrittura del file di output su buffer ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
