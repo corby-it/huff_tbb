@@ -96,10 +96,8 @@ void SeqHuffman::compress(string filename){
 	}
 
 	// Scrittura del file di output (nel vector)
+	pair<uint32_t,uint32_t> element;
 	for (size_t i = 0; i < _file_length; i++){
-		//codes_map[_file_in[i]].first è il codice del simbolo _file_in[i]
-		//codes_map[_file_in[i]].second è la lunghezza del codice del simbolo _file_in[i]
-		pair<uint32_t,uint32_t> element;
 		element = codes_map[_file_in[i]];
 		btw.write(element.first, element.second);
 		//if(i%(_file_length/10)==0) cerr << " .";

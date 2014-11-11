@@ -64,7 +64,7 @@ void ParHuffman::compress(string filename){
 	// ----- DEBUG stampa i codici canonici sulla console--------------------------------
 	/*cout << "SYM\tCODE\tC_LEN\n";
 	for(unsigned i=0; i<codes.size(); ++i)
-		cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;*/
+	cout << (int)codes[i].symbol << "\t" << (int)codes[i].code << "\t" << (int)codes[i].code_len << endl;*/
 	//-----------------------------------------------------------------------------------
 	cerr << "[PAR] Ci sono " << codes.size() << " simboli" << endl;
 
@@ -103,17 +103,18 @@ void ParHuffman::compress(string filename){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	//// Scrittura del file di output
-	//for (size_t i = 0; i < _file_length; i++){
-	//	btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
-	//	//if(i%(_file_length/10)==0) cerr << " .";
-	//}
 	//MEMENTO
 	//map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	// Scrittura del vettore di output
+	cerr << endl << "DEB1" << endl;
+	cerr << "Dimensione del pair: " << sizeof(pair<uint32_t, uint32_t>) << endl;
 	vector<pair<uint32_t, uint32_t>> buffer_map(_file_length);
+	cerr << "Dimensione di buffer_map " << buffer_map.size()*sizeof(pair<uint32_t, uint32_t>) << endl;
+	cerr << "DEB2" << endl;
+
 	parallel_for(blocked_range<int>( 0, _file_length, 10000), [&](const blocked_range<int>& range) {
-		for( int i=range.begin(); i!=range.end(); ++i ){
-			pair<uint32_t,uint32_t> element;
+		pair<uint32_t,uint32_t> element;
+		for( int i=range.begin(); i!=range.end(); ++i ){	
 			element = codes_map[_file_in[i]];
 			buffer_map[i].first = element.first;
 			buffer_map[i].second = element.second;
@@ -163,11 +164,20 @@ void ParHuffman::decompress (string filename){
 	for(unsigned i=0; i<codes.size(); ++i)
 		codes_map.insert(pair<uint32_t, pair<uint8_t,uint32_t>>(codes[i].code,pair<uint8_t,uint32_t>(codes[i].symbol, codes[i].code_len)));
 
+	// tentativo di decompressione parallela (righe seguenti)
+	uint32_t bitreader_idx = btr.tell_index();
+	cerr << endl << "Indice BITREADER: " << bitreader_idx << endl;
+	//parallel_for(blocked_range<int>( bitreader_idx, _file_length, 10000), [&](const blocked_range<int>& range) {
+	//	pair<uint32_t,uint32_t> element;
+	//	for( int i=range.begin(); i!=range.end(); ++i ){	
+
+	//	}
+	//});
+
 	// leggo il file compresso e scrivo l'output
 	while(btr.good()){
-		uint32_t tmp_code = 0;
 		uint32_t tmp_code_len = depthmap[0].first;
-		tmp_code = btr.read(depthmap[0].first);
+		uint32_t tmp_code = btr.read(depthmap[0].first);
 
 		// cerco il codice nella mappa, se non c'è un codice come quello che ho appena letto
 		// o se c'è ma ha lunghezza diversa da quella corrente, leggo un altro bit e lo
