@@ -78,7 +78,13 @@ public:
 	*/
 	std::string get_mode(void);
 
-
+	//! Ask the interface if the current mode is sequential or parallel
+    /*!
+	  If the user gave as parameters either "-p" or "--parallel", the mode is parallel.
+	  Otherwise the mode is sequential.
+      \return std::string mode
+	*/
+	bool is_parallel(void);
 
 	std::vector<std::string> get_files();
 };

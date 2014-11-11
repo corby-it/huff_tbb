@@ -107,6 +107,13 @@ void ParHuffman::compress(string filename){
 		btw.write(codes_map[_file_in[i]].first, codes_map[_file_in[i]].second);
 		//if(i%(_file_length/10)==0) cerr << " .";
 	}
+	//MEMENTO
+	//parallel_for(blocked_range<int>( 0, _file_length, 10000 ), [&](const blocked_range<int>& range) {
+	//	for( int i=range.begin(); i!=range.end(); ++i ){
+	//		histo[_file_in[i]]++;
+	//	}
+	//});
+
 	cerr << endl;
 	btw.flush();
 	t1 = tick_count::now();

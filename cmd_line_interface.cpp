@@ -26,16 +26,12 @@ int CMDLineInterface::verify_inputs() {
 }
 
 
-
 // Inizializza la lista di parametri consentiti
 void CMDLineInterface::init(){
 	array<string,10> myarray = {"-c","--compress", "-d", "--decompress", "-p", "--parallel",
 		"-t", "--timer", 	"-v", "--verbose"};
 	allowed_parameters.insert(myarray.begin(), myarray.end());
 }
-
-
-
 
 
 string CMDLineInterface::get_mode(){
@@ -46,7 +42,13 @@ string CMDLineInterface::get_mode(){
 	return "decompression";
 }
 
+bool CMDLineInterface::is_parallel(){
+	if ( any_of(par_vector.begin(), par_vector.end(),
+		[](string s){return ( !s.compare("-p") || !s.compare("--parallel"));}) )  
+		return true;
 
+	return false;
+}
 
 
 vector<string> CMDLineInterface::get_files(){
