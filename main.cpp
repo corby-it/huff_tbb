@@ -16,7 +16,7 @@ int main (int argc, char *argv[]) {
 	GetSystemInfo(&info_sistema);
 
 	int numeroCPU = info_sistema.dwNumberOfProcessors;
-	cout << "Num cores: " << numeroCPU  << endl << endl;
+	cout << "Total cores available: " << numeroCPU  << endl << endl;
 
 	MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);

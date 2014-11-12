@@ -106,14 +106,14 @@ void ParHuffman::compress(string filename){
     status.dwLength = sizeof(status);
     GlobalMemoryStatusEx(&status);
 	
-	size_t num_chunk = (_file_length*8)/status.ullAvailPhys;
+	int num_chunk = (_file_length*8)/status.ullAvailPhys; //cout << "\nNumero chunks: " << num_chunk << endl;
 	if(num_chunk==0)
 		num_chunk=1;
-	size_t chunk_dim = _file_length/num_chunk;
+	cout << "\nNumero chunks: " << num_chunk << endl;
+	size_t chunk_dim = _file_length/num_chunk; //cerr << "Chunk dim: " << chunk_dim << endl;
 
-	cerr << "Chunk dim: " << chunk_dim << endl;
-	for (size_t i=0; i < 8; ++i) {
-		cerr << "Inizia il ciclo: " << i << endl;
+	for (size_t i=0; i < num_chunk; ++i) {
+		//cerr << "Inizia il ciclo: " << i << endl;
 		vector<pair<uint32_t, uint32_t>> buffer_map(chunk_dim);
 		parallel_for(blocked_range<int>(i*chunk_dim, chunk_dim*(i+1),10000), [&](const blocked_range<int>& range) {
 			pair<uint32_t,uint32_t> element;
@@ -128,7 +128,7 @@ void ParHuffman::compress(string filename){
 	}
 	// Legge la parte del file che viene tagliata dall'approssimazione chunk_dim = _file_length/8;
 	pair<uint32_t,uint32_t> element;
-	cerr << "8*chunk_dim: " << 8*chunk_dim << " file_len :" << _file_length << endl;
+	//cerr << "8*chunk_dim: " << 8*chunk_dim << " file_len :" << _file_length << endl;
 	for (size_t i=8*chunk_dim; i < _file_length; i++){
 		//cerr << "Scrivo un byte avanzato " << i << endl;
 		element = codes_map[_file_in[i]];
