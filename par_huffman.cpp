@@ -98,24 +98,42 @@ void ParHuffman::compress(string filename){
 		btw.write(depthmap[i].first, 8);
 	}
 
-	//MEMENTO map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
-	// Scrittura del vettore di output
-	cerr << endl << "DEB1" << endl;
-	cerr << "Dimensione del pair: " << sizeof(pair<uint32_t, uint32_t>) << endl;
-	vector<pair<uint32_t, uint32_t>> buffer_map(_file_length);
-	cerr << "Dimensione di buffer_map " << buffer_map.size()*sizeof(pair<uint32_t, uint32_t>) << endl;
-	cerr << "DEB2" << endl;
+	//// Scrittura del vettore di output
+	//cerr << "Dimensione del pair: " << sizeof(pair<uint32_t, uint32_t>) << endl;
+	//vector<pair<uint32_t, uint32_t>> buffer_map(_file_length);
+	//cerr << "Dimensione di buffer_map " << buffer_map.size()*sizeof(pair<uint32_t, uint32_t>) << endl;
+	MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+	
+	size_t num_chunk = (_file_length*8)/status.ullAvailPhys;
+	if(num_chunk==0)
+		num_chunk=1;
+	size_t chunk_dim = _file_length/num_chunk;
 
-	parallel_for(blocked_range<int>( 0, _file_length, 10000), [&](const blocked_range<int>& range) {
-		pair<uint32_t,uint32_t> element;
-		for( int i=range.begin(); i!=range.end(); ++i ){	
-			element = codes_map[_file_in[i]];
-			buffer_map[i].first = element.first;
-			buffer_map[i].second = element.second;
-		}
-	});
-	for (size_t i = 0; i < _file_length; i++)
-		btw.write(buffer_map[i].first, buffer_map[i].second);
+	cerr << "Chunk dim: " << chunk_dim << endl;
+	for (size_t i=0; i < 8; ++i) {
+		cerr << "Inizia il ciclo: " << i << endl;
+		vector<pair<uint32_t, uint32_t>> buffer_map(chunk_dim);
+		parallel_for(blocked_range<int>(i*chunk_dim, chunk_dim*(i+1),10000), [&](const blocked_range<int>& range) {
+			pair<uint32_t,uint32_t> element;
+			for( int r=range.begin(); r!=range.end(); ++r ){
+				element = codes_map[_file_in[r]];
+				buffer_map[r-i*chunk_dim].first = element.first;
+				buffer_map[r-i*chunk_dim].second = element.second;
+			}
+		});
+		for (size_t j = 0; j < chunk_dim; j++)
+			btw.write(buffer_map[j].first, buffer_map[j].second);
+	}
+	// Legge la parte del file che viene tagliata dall'approssimazione chunk_dim = _file_length/8;
+	pair<uint32_t,uint32_t> element;
+	cerr << "8*chunk_dim: " << 8*chunk_dim << " file_len :" << _file_length << endl;
+	for (size_t i=8*chunk_dim; i < _file_length; i++){
+		//cerr << "Scrivo un byte avanzato " << i << endl;
+		element = codes_map[_file_in[i]];
+		btw.write(element.first, element.second);
+	}
 	btw.flush();
 
 	t1 = tick_count::now();
