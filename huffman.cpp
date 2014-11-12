@@ -1,4 +1,5 @@
 #include "huffman.h"
+#include <iostream>
 
 using namespace std;
 
@@ -20,6 +21,8 @@ void Huffman::read_file(string filename){
 	file_in.seekg(0, ios::beg);
 
 	// Lettura one-shot del file
+	cout << (float)_file_length/1000000000 << endl;
+
 	char* buffer = new char [_file_length];
 	file_in.read(buffer, _file_length);
 

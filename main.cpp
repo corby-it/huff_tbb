@@ -5,6 +5,7 @@
 
 #include "par_huffman.h"
 #include "seq_huffman.h"
+#include <windows.h>
 
 using namespace std;
 using tbb::tick_count;
@@ -16,6 +17,12 @@ int main (int argc, char *argv[]) {
 
 	int numeroCPU = info_sistema.dwNumberOfProcessors;
 	cout << "Num cores: " << numeroCPU  << endl << endl;
+
+	MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    cout << "Total RAM installed: " << (float)status.ullTotalPhys/1000000000 << endl;
+	cout << "Total RAM avaiable: " << (float)status.ullAvailPhys/1000000000 << endl;
 
 
 	tick_count t0p, t1p, t0s, t1s;
