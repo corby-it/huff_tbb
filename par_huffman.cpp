@@ -125,6 +125,7 @@ void ParHuffman::compress(string filename){
 		});
 		for (size_t j = 0; j < chunk_dim; j++)
 			btw.write(buffer_map[j].first, buffer_map[j].second);
+		buffer_map.clear();
 	}
 	// Legge la parte del file che viene tagliata dall'approssimazione chunk_dim = _file_length/8;
 	pair<uint32_t,uint32_t> element;
