@@ -82,13 +82,13 @@ void SeqHuffman::compress(string filename){
 	//scrivo il magic number
 	btw.write(HUF_MAGIC_NUMBER, 32); //BCP + 1 byte versione
 	// scrivo la dimensione del nome del file originale
-	btw.write(_original_filename.size(), 32);
+	btw.write((uint32_t)_original_filename.size(), 32);
 	// Scrivo il nome del file originale, per recuperarlo in decompressione
 	for(size_t i=0; i<_original_filename.size(); ++i)
 		btw.write(_original_filename[i], 8);
 
 	// scrivo il numero di simboli
-	btw.write(depthmap.size(), 32);
+	btw.write((uint32_t)depthmap.size(), 32);
 	// scrivo tutti i simboli seguiti dalle lunghezze
 	for(unsigned i=0; i<depthmap.size(); ++i){
 		btw.write(depthmap[i].second, 8);

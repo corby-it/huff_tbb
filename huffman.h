@@ -16,7 +16,7 @@ class Huffman {
 private:
 
 public:
-	std::uint32_t _file_length;
+	std::uint64_t _file_length;
 	std::vector<uint8_t> _file_in;
 	std::vector<uint8_t> _file_out;
 

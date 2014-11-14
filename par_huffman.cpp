@@ -12,6 +12,8 @@
 
 #include <string>
 #include <utility> // pair
+#include <cmath> // ceil
+
 using namespace std;
 using namespace tbb;
 
@@ -69,7 +71,7 @@ void ParHuffman::compress(string filename){
 		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
 	}
 
-	cerr << "[PAR] Scrittura su file";
+	cerr << "[PAR] Scrittura su file" << endl;
 	t0 = tick_count::now();
 	// crea il file di output
 	BitWriter btw(_file_out);
@@ -85,15 +87,15 @@ void ParHuffman::compress(string filename){
 	//scrivo il magic number
 	btw.write(HUF_MAGIC_NUMBER, 32);
 	// scrivo la dimensione del nome del file originale
-	btw.write(_original_filename.size(), 32);
+	btw.write((uint32_t)_original_filename.size(), 32);
 	// Scrivo il nome del file originale, per recuperarlo in decompressione
 	for(size_t i=0; i<_original_filename.size(); ++i)
 		btw.write(_original_filename[i], 8);
 
 	// scrivo il numero di simboli
-	btw.write(depthmap.size(), 32);
+	btw.write((uint32_t)depthmap.size(), 32);
 	// scrivo tutti i simboli seguiti dalle lunghezze
-	for(unsigned i=0; i<depthmap.size(); ++i){
+	for(uint32_t i=0; i<depthmap.size(); ++i){
 		btw.write(depthmap[i].second, 8);
 		btw.write(depthmap[i].first, 8);
 	}
@@ -103,17 +105,32 @@ void ParHuffman::compress(string filename){
 	//vector<pair<uint32_t, uint32_t>> buffer_map(_file_length);
 	//cerr << "Dimensione di buffer_map " << buffer_map.size()*sizeof(pair<uint32_t, uint32_t>) << endl;
 	MEMORYSTATUSEX status;
-    status.dwLength = sizeof(status);
-    GlobalMemoryStatusEx(&status);
-	
-	int num_chunk = (_file_length*8)/status.ullAvailPhys; //cout << "\nNumero chunks: " << num_chunk << endl;
+	status.dwLength = sizeof(status);
+	GlobalMemoryStatusEx(&status);
+
+	cerr << endl << "Dimensione file: " << _file_length/1000000 << " MB" << endl;
+	cerr << "Dimensione x 8 : " << (_file_length*8)/1000000 << " MB" << endl;
+	uint64_t available_ram = status.ullAvailPhys;
+	cerr << "RAM disponibile: " << available_ram/1000000 << " MB" << endl;
+
+	// ----- RIPARTIZIONE DINAMICA
+	//uint64_t num_chunk = (_file_length*8)/available_ram; 
+	uint64_t num_chunk = 1 + (_file_length*8-1)/available_ram;
+	cerr << "\nNumero di chunks: " << num_chunk << endl;
 	if(num_chunk==0)
 		num_chunk=1;
-	cout << "\nNumero chunks: " << num_chunk << endl;
-	size_t chunk_dim = _file_length/num_chunk; //cerr << "Chunk dim: " << chunk_dim << endl;
+	num_chunk++; // overprovisioning
+	cerr << "\nNumero di chunks: " << num_chunk << endl;
+	uint64_t chunk_dim = _file_length/num_chunk; 
+	cerr << "Dimensione di un chunk: " << chunk_dim/1000000 << " MB" << endl;
+	// ------ FINE RIPARTIZIONE DINAMICA
+
+	//// ----- RIPARTIZIONE STATICA
+	//uint64_t num_chunk = 7; 
+	//uint64_t chunk_dim = _file_length/num_chunk; 
+	//// ----- FINE RIPARTIZIONE STATICA
 
 	for (size_t i=0; i < num_chunk; ++i) {
-		//cerr << "Inizia il ciclo: " << i << endl;
 		vector<pair<uint32_t, uint32_t>> buffer_map(chunk_dim);
 		parallel_for(blocked_range<int>(i*chunk_dim, chunk_dim*(i+1),10000), [&](const blocked_range<int>& range) {
 			pair<uint32_t,uint32_t> element;
@@ -122,16 +139,17 @@ void ParHuffman::compress(string filename){
 				buffer_map[r-i*chunk_dim].first = element.first;
 				buffer_map[r-i*chunk_dim].second = element.second;
 			}
+
 		});
 		for (size_t j = 0; j < chunk_dim; j++)
 			btw.write(buffer_map[j].first, buffer_map[j].second);
 		buffer_map.clear();
 	}
-	// Legge la parte del file che viene tagliata dall'approssimazione chunk_dim = _file_length/8;
+	// Legge la parte del file che viene tagliata dall'approssimazione nella divisione in chunks
 	pair<uint32_t,uint32_t> element;
+		//cerr << "Scrivo un byte avanzato " << i << endl;
 	//cerr << "8*chunk_dim: " << 8*chunk_dim << " file_len :" << _file_length << endl;
 	for (size_t i=8*chunk_dim; i < _file_length; i++){
-		//cerr << "Scrivo un byte avanzato " << i << endl;
 		element = codes_map[_file_in[i]];
 		btw.write(element.first, element.second);
 	}
