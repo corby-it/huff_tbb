@@ -17,7 +17,7 @@ void Huffman::read_file(string filename){
 	file_in.unsetf (ifstream::skipws);
 
 	// Salva la dimensione del file e torna all'inizio
-	_file_length = (uint32_t) file_in.tellg();
+	_file_length = (uint64_t) file_in.tellg();
 	file_in.seekg(0, ios::beg);
 
 	// Lettura one-shot del file
@@ -25,9 +25,8 @@ void Huffman::read_file(string filename){
 
 	char* buffer = new char [_file_length];
 	file_in.read(buffer, _file_length);
-
 	_file_in.assign(buffer, buffer+_file_length);
-
+	delete[] buffer;
 	file_in.close();
 
 }

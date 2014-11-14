@@ -15,15 +15,16 @@ int main (int argc, char *argv[]) {
 	SYSTEM_INFO info_sistema;
 	GetSystemInfo(&info_sistema);
 
+	// Check number of available cores
 	int numeroCPU = info_sistema.dwNumberOfProcessors;
 	cout << "Total cores available: " << numeroCPU  << endl << endl;
 
+	// Check available memory
 	MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);
     GlobalMemoryStatusEx(&status);
-    cout << "Total RAM installed: " << (float)status.ullTotalPhys/1000000000 << endl;
-	cout << "Total RAM available: " << (float)status.ullAvailPhys/1000000000 << endl;
-
+    cerr << "Total RAM installed: " << (float)status.ullTotalPhys/1000000 << " MB" << endl;
+	cerr << "Total RAM available: " << (float)status.ullAvailPhys/1000000 << " MB" << endl;
 
 	tick_count t0p, t1p, t0s, t1s;
 	tick_count t01s, t02s, t01p, t02p;
@@ -41,6 +42,15 @@ int main (int argc, char *argv[]) {
 
 	vector<string> input_files = shell.get_files();
 
+
+	// Check file dimension - chunking is needed?
+	ifstream file_in(input_files[0], ifstream::in|ifstream::binary|fstream::ate);
+	// NON salta i whitespaces
+	file_in.unsetf (ifstream::skipws);
+	// Salva la dimensione del file e torna all'inizio
+	uint64_t len = (uint64_t) file_in.tellg();
+	file_in.close();
+
 	if(!shell.get_mode().compare("compression")) {
 
 		if(shell.is_parallel()){
@@ -48,6 +58,7 @@ int main (int argc, char *argv[]) {
 				// --- Comprimi con compressione parallela
 				t0p = tick_count::now();
 				par_huff.read_file(input_files[i]);
+				cerr << "Total RAM available: " << (float)status.ullAvailPhys/1000000 << " MB" << endl;
 				par_huff.compress(input_files[i]);
 				t01p = tick_count::now();
 				par_huff.write_on_file();

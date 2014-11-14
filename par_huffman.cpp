@@ -12,7 +12,6 @@
 
 #include <string>
 #include <utility> // pair
-#include <cmath> // ceil
 
 using namespace std;
 using namespace tbb;
@@ -114,7 +113,6 @@ void ParHuffman::compress(string filename){
 	cerr << "RAM disponibile: " << available_ram/1000000 << " MB" << endl;
 
 	// ----- RIPARTIZIONE DINAMICA
-	//uint64_t num_chunk = (_file_length*8)/available_ram; 
 	uint64_t num_chunk = 1 + (_file_length*8-1)/available_ram;
 	cerr << "\nNumero di chunks: " << num_chunk << endl;
 	if(num_chunk==0)
