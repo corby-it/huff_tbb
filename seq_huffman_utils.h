@@ -22,8 +22,8 @@ typedef cont_t::iterator iter_t;
 
 typedef std::vector<SeqHuffNode*> LeavesVector;
 
-typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
-typedef std::pair<unsigned,std::uint8_t> DepthMapElement;
+typedef std::vector<std::pair<std::uint32_t,std::uint32_t>> DepthMap;
+typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
 
 // METHODS
 

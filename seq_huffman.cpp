@@ -89,7 +89,8 @@ void SeqHuffman::compress(string filename){
 
 	// scrivo il numero di simboli
 	btw.write((uint32_t)depthmap.size(), 32);
-	// scrivo tutti i simboli seguiti dalle lunghezze
+
+	// scrivo tutti i SIMBOLI SEGUITI DALLE LUNGHEZZE
 	for(unsigned i=0; i<depthmap.size(); ++i){
 		btw.write(depthmap[i].second, 8);
 		btw.write(depthmap[i].first, 8);
@@ -130,9 +131,10 @@ void SeqHuffman::decompress (string filename){
 
 	// leggo il numero di simboli totali
 	uint32_t tot_symbols = btr.read(32);
-	// creo un vettore di coppie <lunghezza_simbolo, simbolo>
-	DepthMap depthmap;
 
+	// creo un vettore di coppie <lunghezza_simbolo, simbolo>
+	// In realtà legge coppie <simbolo, lunghezza_codice>, non viceversa!!! come fa a funzionare???
+	DepthMap depthmap;
 	for(unsigned i=0; i<tot_symbols; ++i)
 		depthmap.push_back(DepthMapElement(btr.read(8), btr.read(8)));
 

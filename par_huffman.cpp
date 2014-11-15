@@ -44,8 +44,8 @@ void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macroc
 	}
 	// Legge la parte del file che viene tagliata dall'approssimazione nella divisione in chunks
 	pair<uint32_t,uint32_t> element;
-	//cerr << "Scrivo un byte avanzato " << i << endl;
-	//cerr << "8*microchunk_dim: " << 8*microchunk_dim << " file_len :" << macrochunk_dim << endl;
+	cerr << "Scrivo un byte avanzato " << endl;
+	cerr << "8*microchunk_dim: " << num_microchunk*microchunk_dim << " file_len :" << macrochunk_dim << endl;
 	for (size_t i=num_microchunk*microchunk_dim; i < macrochunk_dim; i++){
 		element = codes_map[_file_in[i]];
 		btw.write(element.first, element.second);
@@ -97,15 +97,15 @@ BitWriter ParHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_m
 
 	// scrivo PRIMA LA LUNGHEZZA POI IL SIMBOLO
 	for(size_t i=0; i<depthmap.size(); ++i){
-		btw.write(depthmap[i].second, 8); // lunghezza
-		btw.write(depthmap[i].first, 8);  // simbolo
+		btw.write(depthmap[i].first, 8); // lunghezza
+		btw.write(depthmap[i].second, 8);  // simbolo
 	}
-	/*for(uint32_t i=0; i<256; ++i){
-		if(codes_map.find(i) != codes_map.end()){
-			btw.write(i, 8);
-			btw.write(codes_map[i].second, 8);
-		}
-	}*/
+	//for(uint32_t i=0; i<256; ++i){
+	//	if(codes_map.find(i) != codes_map.end()){
+	//		btw.write(i, 8);
+	//		btw.write(codes_map[i].second, 8);
+	//	}
+	//}
 
 	return btw;
 }
@@ -315,11 +315,20 @@ void ParHuffman::decompress (string filename){
 
 	// leggo il numero di simboli totali
 	uint32_t tot_symbols = btr.read(32);
+
 	// creo un vettore di coppie <lunghezza_simbolo, simbolo>
 	DepthMap depthmap;
+	for(unsigned i=0; i<tot_symbols; ++i){
+		uint8_t code_len = btr.read(8);
+		uint8_t symb = btr.read(8);
+		depthmap.push_back(DepthMapElement(code_len, symb));
+	}
 
-	for(unsigned i=0; i<tot_symbols; ++i)
-		depthmap.push_back(DepthMapElement(btr.read(8), btr.read(8)));
+
+	// debug -- stampo depthmap
+	cerr << endl;
+	for(int i=0; i<depthmap.size(); ++i)
+		cerr << depthmap[i].first << "\t" << depthmap[i].second << endl;
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
 	vector<ParTriplet> codes;
@@ -333,12 +342,6 @@ void ParHuffman::decompress (string filename){
 	// tentativo di decompressione parallela (righe seguenti)
 	uint32_t bitreader_idx = btr.tell_index();
 	cerr << endl << "Indice BITREADER: " << bitreader_idx << endl;
-	//parallel_for(blocked_range<int>( bitreader_idx, _file_length, 10000), [&](const blocked_range<int>& range) {
-	//	pair<uint32_t,uint32_t> element;
-	//	for( int i=range.begin(); i!=range.end(); ++i ){	
-
-	//	}
-	//});
 
 	// leggo il file compresso e scrivo l'output
 	while(btr.good()){

@@ -16,7 +16,7 @@
 // ----------- DEFINITIONS AND METHODS FOR PARALLEL EXECUTION----------------------------------
 //---------------------------------------------------------------------------------------------
 typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
-typedef std::pair<unsigned,std::uint8_t> DepthMapElement;
+typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
 typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
 typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 
