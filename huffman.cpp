@@ -11,6 +11,11 @@ void Huffman::read_file(string filename){
 
 	// setta original filename
 	_original_filename = filename;
+	
+	// setto output filename
+	_output_filename = _original_filename;
+	_output_filename.replace(_output_filename.size()-4, 4, ".bcp");
+
 	// Apri file di input
 	ifstream file_in(filename, ifstream::in|ifstream::binary|fstream::ate);
 	// NON salta i whitespaces
@@ -29,6 +34,29 @@ void Huffman::read_file(string filename){
 	delete[] buffer;
 	file_in.close();
 
+}
+
+void Huffman::read_file(string filename, uint64_t beg_pos, uint64_t chunk_dim){
+
+	// setta original filename
+	_original_filename = filename;
+
+	// setto output filename
+	_output_filename = _original_filename;
+	_output_filename.replace(_output_filename.size()-4, 4, ".bcp");
+
+	// Apri file di input
+	ifstream file_in(filename, ifstream::in|ifstream::binary);
+	// NON salta i whitespaces
+	file_in.unsetf (ifstream::skipws);
+
+	char* buffer = new char [chunk_dim];
+
+	file_in.seekg(beg_pos); // posizione iniziale = inizio del chunk attuale
+	file_in.read(buffer, chunk_dim);
+	_file_in.assign(buffer, buffer+chunk_dim);
+	delete[] buffer;
+	file_in.close();
 }
 
 /*

@@ -29,6 +29,8 @@ public:
 	*/
 	void read_file(std::string filename_in);
 
+	void read_file(std::string filename, std::uint64_t beg_pos, std::uint64_t chunk_dim);
+
 	/*
 	Funzione che prende il risultato della comrpessione da un vector<uint8_t> e lo
 	scrive in blocco sul file di output

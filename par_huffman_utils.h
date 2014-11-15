@@ -21,34 +21,6 @@ typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare con
 typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 
 
-struct TBBHistoReduce{
-	std::vector<tbb::atomic<std::uint32_t>> _histo; 
-
-	TBBHistoReduce() {
-		tbb::atomic<uint32_t> j;
-		j = 0;
-		_histo.assign(256,j);
-	}
-
-	TBBHistoReduce(TBBHistoReduce& tbbhr, tbb::split) {
-		tbb::atomic<uint32_t> j;
-		j = 0;
-		_histo.assign(256,j);
-
-	}
-
-	void operator()(const tbb::blocked_range<std::uint8_t*>& r){
-		for(std::uint8_t* u=r.begin(); u!=r.end(); ++u)
-			_histo[*u]++;
-		
-	}
-
-	void join(TBBHistoReduce& tbbhr){
-		for(std::size_t i=0; i<256; ++i)
-			_histo[i] += tbbhr._histo[i];
-	}
-};
-
 struct ParTriplet{
 	std::uint8_t symbol;
 	std::uint32_t code;
