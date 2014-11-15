@@ -81,13 +81,31 @@ BitWriter ParHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_m
 
 	// scrivo il numero di simboli
 	btw.write((uint32_t)codes_map.size(), 32);
-	// scrivo tutti i simboli seguiti dalle lunghezze
+
+	// creo un'altra struttura ordinata per scrivere i simboli in ordine, dal più corto al più lungo
+	// la depthmap contiene le coppie <lunghezza, simbolo>
+	DepthMap depthmap;
 	for(uint32_t i=0; i<256; ++i){
 		if(codes_map.find(i) != codes_map.end()){
-			btw.write(codes_map[i].second, 8);
-			btw.write(i, 8);
+			DepthMapElement tmp;
+			tmp.first = codes_map[i].second;
+			tmp.second = i;
+			depthmap.push_back(tmp);
 		}
 	}
+	sort(depthmap.begin(), depthmap.end(), par_depth_compare);
+
+	// scrivo PRIMA LA LUNGHEZZA POI IL SIMBOLO
+	for(size_t i=0; i<depthmap.size(); ++i){
+		btw.write(depthmap[i].second, 8); // lunghezza
+		btw.write(depthmap[i].first, 8);  // simbolo
+	}
+	/*for(uint32_t i=0; i<256; ++i){
+		if(codes_map.find(i) != codes_map.end()){
+			btw.write(i, 8);
+			btw.write(codes_map[i].second, 8);
+		}
+	}*/
 
 	return btw;
 }

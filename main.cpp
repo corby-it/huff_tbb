@@ -103,19 +103,20 @@ int main (int argc, char *argv[]) {
 		}
 
 		btw.flush();
-		output_file.write(reinterpret_cast<char*>(&par_huff._file_out[0]), par_huff._file_out.size());
+		if(par_huff._file_out.size() != 0)
+			output_file.write(reinterpret_cast<char*>(&par_huff._file_out[0]), par_huff._file_out.size());
+
 		output_file.close();
 
 	} else {// DECOMPRESS
-			t0s = tick_count::now();
-			
-			seq_huff.read_file(input_files[0]);
-			seq_huff.decompress(input_files[0]);
-			seq_huff.write_on_file();
+		t0s = tick_count::now();
 
-			t1s = tick_count::now();
-			cerr << "[SEQ] La decompressione del file " << input_files[0] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
+		seq_huff.read_file(input_files[0]);
+		seq_huff.decompress(input_files[0]);
+		seq_huff.write_on_file();
 
+		t1s = tick_count::now();
+		cerr << "[SEQ] La decompressione del file " << input_files[0] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
 	}
 
 

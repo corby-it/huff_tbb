@@ -155,8 +155,7 @@ void SeqHuffman::decompress (string filename){
 		// o se c'è ma ha lunghezza diversa da quella corrente, leggo un altro bit e lo
 		// aggiungo al codice per cercare di nuovo.
 		// questo modo mi sa che è super inefficiente... sicuramente si può fare di meglio
-		while(codes_map.find(tmp_code) == codes_map.end() ||
-			(codes_map.find(tmp_code) != codes_map.end() && tmp_code_len != codes_map[tmp_code].second )){
+		while(codes_map.find(tmp_code) == codes_map.end() || (codes_map.find(tmp_code) != codes_map.end() && tmp_code_len != codes_map[tmp_code].second )){
 
 				tmp_code = (tmp_code << 1) | (1 & btr.read_bit());
 				tmp_code_len++;
