@@ -28,7 +28,12 @@ typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
 // METHODS
 
 bool seq_depth_compare(DepthMapElement first, DepthMapElement second){
-	return (first.first < second.first);
+	// Se le lunghezze dei simboli sono diverse, confronta quelle
+	if(first.first != second.first)
+		return (first.first < second.first);
+	// in caso contrario confronta i simboli
+	else
+		return (first.second < second.second);
 }
 
 void seq_create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){

@@ -28,7 +28,12 @@ struct ParTriplet{
 };
 
 bool par_depth_compare(DepthMapElement first, DepthMapElement second){
-	return (first.first < second.first);
+	// Se le lunghezze dei simboli sono diverse, confronta quelle
+	if(first.first != second.first)
+		return (first.first < second.first);
+	// in caso contrario confronta i simboli
+	else
+		return (first.second < second.second);
 }
 
 void par_canonical_codes(DepthMap & depthmap, std::vector<ParTriplet>& codes){
