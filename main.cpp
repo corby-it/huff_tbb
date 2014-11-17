@@ -68,6 +68,7 @@ int main (int argc, char *argv[]) {
 				num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
 			cerr << "num macrochunks: " << num_macrochunks << endl;
 			uint64_t macrochunk_dim = file_len / num_macrochunks;
+			cerr << "dim macrochunks: " << (float)macrochunk_dim/1000000 << " MB"<< endl;
 
 			TBBHistoReduce tbbhr;
 			//ifstream file_in(input_files[0], ifstream::in|ifstream::binary);
@@ -78,7 +79,9 @@ int main (int argc, char *argv[]) {
 				par_huff.create_histo(tbbhr, macrochunk_dim);
 			}
 			if(num_macrochunks*macrochunk_dim < file_len){ // byte avanzati
-				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len);
+				//cout << "Leggo byte avanzati da " << num_macrochunks*macrochunk_dim << "a " << file_len << endl;
+				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+				//cout << "Creo istogramma con byte avanzati" << endl;
 				par_huff.create_histo(tbbhr, (file_len - num_macrochunks*macrochunk_dim));
 			}
 			//Stampa di debug dell'istogramma complessivo
@@ -87,9 +90,11 @@ int main (int argc, char *argv[]) {
 			cerr << "Byte: " << i << " Occ: " << tbbhr._histo[i] << endl;*/
 
 			// Crea la mappa <simbolo, <codice, len_codice>>
+			cout << "Creo istogrammi" << endl;
 			map<uint8_t, pair<uint32_t,uint32_t>> codes_map = par_huff.create_code_map(tbbhr);
 
 			// Scrittura unica dell'header del file
+			cout << "Scrivo header del file" << endl;
 			BitWriter btw = par_huff.write_header(codes_map);
 
 			status.dwLength = sizeof(status);
@@ -113,7 +118,7 @@ int main (int argc, char *argv[]) {
 			}
 			if(num_macrochunks*macrochunk_dim < file_len){ // byte avanzati
 				cerr << endl << "Scrivo i byte avanzati dalla divisione in macrochunk" << endl;
-				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len);
+				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
 				par_huff.write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
 			}
 			btw.flush();
