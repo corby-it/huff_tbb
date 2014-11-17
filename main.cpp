@@ -55,7 +55,12 @@ int main (int argc, char *argv[]) {
 			file_in.unsetf (ifstream::skipws);
 			// Salva la dimensione del file e torna all'inizio
 			uint64_t file_len = (uint64_t) file_in.tellg();
-			file_in.close();
+			//file_in.close();
+			// setta original filename
+			par_huff._original_filename = input_files[0];
+			// setto output filename
+			par_huff._output_filename = par_huff._original_filename;
+			par_huff._output_filename.replace(par_huff._output_filename.size()-4, 4, ".bcp");
 
 			uint64_t MAX_LEN = ten_MB; 
 			uint64_t num_macrochunks = 1;
@@ -65,18 +70,21 @@ int main (int argc, char *argv[]) {
 			uint64_t macrochunk_dim = file_len / num_macrochunks;
 
 			TBBHistoReduce tbbhr;
+			//ifstream file_in(input_files[0], ifstream::in|ifstream::binary);
+			//file_in.unsetf (ifstream::skipws);
+
 			for(uint64_t k=0; k < num_macrochunks; ++k) {
-				par_huff.read_file(input_files[0], k*macrochunk_dim, macrochunk_dim);
+				par_huff.read_file(file_in, k*macrochunk_dim, macrochunk_dim);
 				par_huff.create_histo(tbbhr, macrochunk_dim);
 			}
 			if(num_macrochunks*macrochunk_dim < file_len){ // byte avanzati
-				par_huff.read_file(input_files[0], num_macrochunks*macrochunk_dim, file_len);
+				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len);
 				par_huff.create_histo(tbbhr, (file_len - num_macrochunks*macrochunk_dim));
 			}
 			//Stampa di debug dell'istogramma complessivo
-			for(int i=0; i<256; ++i)
-				if(tbbhr._histo[i]!=0)
-					cerr << "Byte: " << i << " Occ: " << tbbhr._histo[i] << endl;
+			/*for(int i=0; i<256; ++i)
+			if(tbbhr._histo[i]!=0)
+			cerr << "Byte: " << i << " Occ: " << tbbhr._histo[i] << endl;*/
 
 			// Crea la mappa <simbolo, <codice, len_codice>>
 			map<uint8_t, pair<uint32_t,uint32_t>> codes_map = par_huff.create_code_map(tbbhr);
@@ -98,20 +106,21 @@ int main (int argc, char *argv[]) {
 			// Scrittura del file compresso chunk-by-chunk
 			for(uint64_t k=0; k < num_macrochunks; ++k) {
 				cerr << endl << "Scrivo il macrochunk numero: " << k << endl;
-				par_huff.read_file(input_files[0], k*macrochunk_dim, macrochunk_dim);
+				par_huff.read_file(file_in, k*macrochunk_dim, macrochunk_dim);
 				par_huff.write_chunks_compressed(available_ram, macrochunk_dim, codes_map, btw);
 				output_file.write(reinterpret_cast<char*>(&par_huff._file_out[0]), par_huff._file_out.size());
 				par_huff._file_out.clear();
 			}
 			if(num_macrochunks*macrochunk_dim < file_len){ // byte avanzati
 				cerr << endl << "Scrivo i byte avanzati dalla divisione in macrochunk" << endl;
-				par_huff.read_file(input_files[0], num_macrochunks*macrochunk_dim, file_len);
+				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len);
 				par_huff.write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
 			}
 			btw.flush();
 			if(par_huff._file_out.size() != 0)
 				output_file.write(reinterpret_cast<char*>(&par_huff._file_out[0]), par_huff._file_out.size());
 			output_file.close();
+			file_in.close();
 
 
 		} else { // compressione sequenziale
@@ -120,7 +129,7 @@ int main (int argc, char *argv[]) {
 			seq_huff.read_file(input_files[0]);
 			seq_huff.compress(input_files[0]);
 			t01s = tick_count::now();
-			seq_huff.write_on_file();
+			seq_huff.write_on_file(input_files[0]);
 			t02s = tick_count::now();
 			cerr << "[SEQ] Il trasferimento del buffer su HDD ha impiegato " << (t02s - t01s).seconds() << " sec" << endl << endl;
 			t1s = tick_count::now();
@@ -136,7 +145,7 @@ int main (int argc, char *argv[]) {
 
 		seq_huff.read_file(input_files[0]);
 		seq_huff.decompress(input_files[0]);
-		seq_huff.write_on_file();
+		seq_huff.write_on_file(input_files[0]);
 
 		t1s = tick_count::now();
 		cerr << "[SEQ] La decompressione del file " << input_files[0] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
