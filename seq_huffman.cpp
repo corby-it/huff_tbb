@@ -11,6 +11,11 @@
 using namespace std;
 using namespace tbb;
 
+void SeqHuffman::create_histo(vector<uint32_t>& histo, uint64_t chunk_dim){
+	for(size_t i=0; i<chunk_dim; ++i)
+		histo[_file_in[i]]++;
+}
+
 void SeqHuffman::compress(string filename){
 	// utili per ottimizzazioni
 	tick_count t0, t1;
@@ -23,8 +28,7 @@ void SeqHuffman::compress(string filename){
 	vector<uint32_t> histo(256);
 
 	t0 = tick_count::now();
-	for(size_t i=0; i<_file_length; ++i)
-		histo[_file_in[i]]++;
+	
 	t1 = tick_count::now();
 	cerr << "[SEQ] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
