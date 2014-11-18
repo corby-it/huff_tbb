@@ -146,8 +146,8 @@ int main (int argc, char *argv[]) {
 		} else { 
 
 			// Utility
-			tick_count tts1, tts2;
-			tts1 = tick_count::now();
+			tick_count tt1, tt2;
+			tt1 = tick_count::now();
 
 			// Object for sequential compression
 			SeqHuffman seq_huff;
@@ -168,22 +168,61 @@ int main (int argc, char *argv[]) {
 			}
 			th2 = tick_count::now();
 			if(num_macrochunks==1) cerr << "\rHistogram computation: 100%";
-			cerr << endl << "Time for all sub-histograms: " << (th2-th1).seconds() << " sec" << endl;
+			cerr << endl << "Time for all sub-histograms: " << (th2-th1).seconds() << " sec" << endl << endl;
 
+			// For each exceeding byte -> read and histo
+			if(num_macrochunks*macrochunk_dim < file_len){ 
+				seq_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+				seq_huff.create_histo(histo, (file_len - num_macrochunks*macrochunk_dim));
+			}
 
+			// Create map <symbol, <code, len_code>>
+			map<uint8_t, pair<uint32_t,uint32_t>> codes_map = seq_huff.create_code_map(histo);
 
+			// Write file header
+			BitWriter btw = seq_huff.write_header(codes_map);
 
-			/*t0s = tick_count::now();
-			seq_huff.read_file(input_files[0]);
-			seq_huff.compress(input_files[0]);
-			t01s = tick_count::now();
-			seq_huff.write_on_file(input_files[0]);
-			t02s = tick_count::now();
-			cerr << "[SEQ] Il trasferimento del buffer su HDD ha impiegato " << (t02s - t01s).seconds() << " sec" << endl << endl;
-			t1s = tick_count::now();*/
+			uint64_t available_ram = status.ullAvailPhys;
 
-			tts2 = tick_count::now();
-			cerr << "Total time: " <<  (tts2 - tts1).seconds() << " sec" << endl << endl;
+			cerr << endl << endl << "Chunk dimension: " << macrochunk_dim/1000000 << " MB" << " (x8: "<< (macrochunk_dim*8)/1000000 << " MB)" << endl;
+
+			ofstream output_file(seq_huff._output_filename, fstream::out|fstream::binary);
+			cerr << "Output filename: " << seq_huff._output_filename << endl;
+
+			// Write compressed file chunk-by-chunk
+			tick_count tw1, tw2;
+			tw1 = tick_count::now();
+			for(uint64_t k=0; k < num_macrochunks; ++k) {
+				seq_huff.read_file(file_in, k*macrochunk_dim, macrochunk_dim);
+				seq_huff.write_chunks_compressed(available_ram, macrochunk_dim, codes_map, btw);
+				output_file.write(reinterpret_cast<char*>(&seq_huff._file_out[0]), seq_huff._file_out.size());
+				seq_huff._file_out.clear();
+				cerr << "\rWrite compressed file: " << ((100*(k+1))/num_macrochunks) << "%";
+			}
+			if(num_macrochunks==1) cerr << "\rWrite compressed file: 100%";
+			// Write exceeding byte
+			if(num_macrochunks*macrochunk_dim < file_len){ 
+				cerr << endl << "Byte exceeding are written...";
+				seq_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+				seq_huff.write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
+			}
+			btw.flush();
+			tw2 = tick_count::now();
+			cerr << endl << "Time for all writing (buffer): " << (tw2-tw1).seconds() << " sec" << endl;
+
+			// Write on HDD
+			tick_count twhd1, twhd2;
+			twhd1 = tick_count::now();
+			if(seq_huff._file_out.size() != 0)
+				output_file.write(reinterpret_cast<char*>(&seq_huff._file_out[0]), seq_huff._file_out.size());
+			output_file.close();
+			file_in.close();
+			twhd2 = tick_count::now();
+			cerr << "Time for all writing (Hard Disk): " << (twhd2-twhd1).seconds() << " sec" << endl;
+			cerr << endl;
+
+			tt2 = tick_count::now();
+			cerr << "Total time: " <<  (tt2 - tt1).seconds() << " sec" << endl << endl;
 
 		}
 	} else {// DECOMPRESS

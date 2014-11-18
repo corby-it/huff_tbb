@@ -16,21 +16,123 @@ void SeqHuffman::create_histo(vector<uint32_t>& histo, uint64_t chunk_dim){
 		histo[_file_in[i]]++;
 }
 
+map<std::uint8_t, pair<uint32_t,uint32_t>> SeqHuffman::create_code_map(vector<uint32_t>& histo){
+	tick_count t0, t1;
+	t0 = tick_count::now();
+	LeavesVector leaves_vect;
+	seq_create_huffman_tree(histo, leaves_vect);
+	t1 = tick_count::now();
+	cerr << "[SEQ] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+
+	leaves_vect[0]->setRoot(true);
+	DepthMap depthmap;
+	seq_depth_assign(leaves_vect[0], depthmap);
+	cerr << "[SEQ] Profondita' assegnate\n";
+	// ordino la depthmap per profondità 
+	sort(depthmap.begin(), depthmap.end(), seq_depth_compare);
+	cerr << "[SEQ] Profondita' ordinate" << endl;
+	// creo i codici canonici usando la depthmap e li scrivo in codes
+	vector<SeqTriplet> codes;
+	seq_canonical_codes(depthmap, codes);
+	cout << "[SEQ] Ci sono " << codes.size() << " simboli" << endl;
+	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
+	map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	for(unsigned i=0; i<codes.size(); ++i){
+		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
+	}
+
+	return codes_map;
+}
+
+BitWriter SeqHuffman::write_header(std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map){
+	// utili per ottimizzazione
+	tick_count t0, t1;
+	cerr << "[PAR] Scrittura su file" << endl;
+	t0 = tick_count::now();
+	// crea il file di output
+	BitWriter btw(_file_out);
+
+	//scrivo il magic number
+	btw.write(HUF_MAGIC_NUMBER, 32);
+	// scrivo la dimensione del nome del file originale
+	btw.write((uint32_t)_original_filename.size(), 32);
+	// Scrivo il nome del file originale, per recuperarlo in decompressione
+	for(size_t i=0; i<_original_filename.size(); ++i)
+		btw.write(_original_filename[i], 8);
+
+	// scrivo il numero di simboli
+	btw.write((uint32_t)codes_map.size(), 32);
+
+	// creo un'altra struttura ordinata per scrivere i simboli in ordine, dal più corto al più lungo
+	// la depthmap contiene le coppie <lunghezza, simbolo>
+	DepthMap depthmap;
+	for(uint32_t i=0; i<256; ++i){
+		if(codes_map.find(i) != codes_map.end()){
+			DepthMapElement tmp;
+			tmp.first = codes_map[i].second;
+			tmp.second = i;
+			depthmap.push_back(tmp);
+		}
+	}
+	sort(depthmap.begin(), depthmap.end(), seq_depth_compare);
+
+	// scrivo PRIMA IL SIMBOLO POI LA LUNGHEZZA
+	for(size_t i=0; i<depthmap.size(); ++i){
+		btw.write(depthmap[i].second, 8); // simbolo
+		btw.write(depthmap[i].first, 8);  // lunghezza
+	}
+
+	return btw;
+}
+
+void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map, BitWriter& btw){
+	// ----- RIPARTIZIONE DINAMICA
+	uint64_t num_microchunk = 1 + (macrochunk_dim*8-1)/available_ram;
+	if(num_microchunk==0)
+		num_microchunk=1;
+	num_microchunk++; // overprovisioning
+	//cerr << "\nNumero di microchunks: " << num_microchunk << endl;
+	uint64_t microchunk_dim = macrochunk_dim/num_microchunk; 
+	//cerr << "Dimensione di un microchunk: " << microchunk_dim/1000000 << " MB" << endl;
+	// ------ FINE RIPARTIZIONE DINAMICA
+
+	for (size_t i=0; i < num_microchunk; ++i) {
+		vector<pair<uint32_t, uint32_t>> buffer_map(microchunk_dim);
+		pair<uint32_t,uint32_t> element;
+		for( int r=i*microchunk_dim; r<(microchunk_dim*(i+1)); ++r ){
+			element = codes_map[_file_in[r]];
+			buffer_map[r-i*microchunk_dim].first = element.first;
+			buffer_map[r-i*microchunk_dim].second = element.second;
+		}
+
+		for (size_t j = 0; j < microchunk_dim; j++)
+			btw.write(buffer_map[j].first, buffer_map[j].second);
+		buffer_map.clear();
+	}
+	// Legge la parte del file che viene tagliata dall'approssimazione nella divisione in chunks
+	pair<uint32_t,uint32_t> element;
+	//cerr << "Scrivo un byte avanzato, infatti (num_microchunk*microchunk_dim)=" << num_microchunk*microchunk_dim << " < file_len=" << macrochunk_dim << endl;
+	for (size_t i=num_microchunk*microchunk_dim; i < macrochunk_dim; i++){
+		element = codes_map[_file_in[i]];
+		btw.write(element.first, element.second);
+	}
+}
+
 void SeqHuffman::compress(string filename){
 	// utili per ottimizzazioni
 	tick_count t0, t1;
 
 	// setto output filename
-	_output_filename = _original_filename;
-	_output_filename.replace(_output_filename.size()-4, 4, ".bcp");
+	/*_output_filename = _original_filename;
+	_output_filename.replace(_output_filename.size()-4, 4, ".bcp");*/
 
 	//creo un istogramma per i 256 possibili uint8_t
 	vector<uint32_t> histo(256);
 
-	t0 = tick_count::now();
-	
-	t1 = tick_count::now();
-	cerr << "[SEQ] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+	//t0 = tick_count::now();
+	//
+	//t1 = tick_count::now();
+	//cerr << "[SEQ] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
 	t0 = tick_count::now();
@@ -163,8 +265,8 @@ void SeqHuffman::decompress (string filename){
 		// questo modo mi sa che è super inefficiente... sicuramente si può fare di meglio
 		while(codes_map.find(tmp_code) == codes_map.end() || (codes_map.find(tmp_code) != codes_map.end() && tmp_code_len != codes_map[tmp_code].second )){
 
-				tmp_code = (tmp_code << 1) | (1 & btr.read_bit());
-				tmp_code_len++;
+			tmp_code = (tmp_code << 1) | (1 & btr.read_bit());
+			tmp_code_len++;
 		}
 
 		// se esco dal while ho trovato un codice, lo leggo, e lo scrivo sul file di output
