@@ -23,6 +23,8 @@ public:
 	std::string _original_filename;
 	std::string _output_filename;
 
+	void init(std::string filename);
+
 	/*
 	Funzione che legge il file in input, riempie un vector<uint8_t> con il contenuto del file
 	e restituisce il vector<uint8_t> su cui successivamente applicare la compressione

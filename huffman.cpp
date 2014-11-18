@@ -3,6 +3,14 @@
 
 using namespace std;
 
+void Huffman::init(std::string filename){
+	// setta original filename
+	_original_filename = filename;
+	// setto output filename
+	_output_filename = _original_filename;
+	_output_filename.replace(_output_filename.size()-4, 4, ".bcp");
+}
+
 /*
 Funzione che legge il file in input, riempie un vector<uint8_t> con il contenuto del file
 e restituisce il vector<uint8_t> su cui successivamente applicare la compressione

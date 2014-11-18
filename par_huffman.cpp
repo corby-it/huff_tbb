@@ -22,9 +22,9 @@ void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macroc
 	if(num_microchunk==0)
 		num_microchunk=1;
 	num_microchunk++; // overprovisioning
-	cerr << "\nNumero di microchunks: " << num_microchunk << endl;
+	//cerr << "\nNumero di microchunks: " << num_microchunk << endl;
 	uint64_t microchunk_dim = macrochunk_dim/num_microchunk; 
-	cerr << "Dimensione di un microchunk: " << microchunk_dim/1000000 << " MB" << endl;
+	//cerr << "Dimensione di un microchunk: " << microchunk_dim/1000000 << " MB" << endl;
 	// ------ FINE RIPARTIZIONE DINAMICA
 
 	for (size_t i=0; i < num_microchunk; ++i) {
@@ -44,7 +44,7 @@ void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macroc
 	}
 	// Legge la parte del file che viene tagliata dall'approssimazione nella divisione in chunks
 	pair<uint32_t,uint32_t> element;
-	cerr << "Scrivo un byte avanzato, infatti (num_microchunk*microchunk_dim)=" << num_microchunk*microchunk_dim << " < file_len=" << macrochunk_dim << endl;
+	//cerr << "Scrivo un byte avanzato, infatti (num_microchunk*microchunk_dim)=" << num_microchunk*microchunk_dim << " < file_len=" << macrochunk_dim << endl;
 	for (size_t i=num_microchunk*microchunk_dim; i < macrochunk_dim; i++){
 		element = codes_map[_file_in[i]];
 		btw.write(element.first, element.second);
@@ -116,13 +116,8 @@ BitWriter ParHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_m
 }
 
 void ParHuffman::create_histo(TBBHistoReduce& tbbhr, uint64_t chunk_dim){
-	// utili per ottimizzazione
-	tick_count t0, t1;
 	// Creazione dell'istogramma in parallelo con parallel_reduce
-	t0 = tick_count::now();
 	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+chunk_dim), tbbhr);
-	t1 = tick_count::now();
-	cerr << "[PAR] La creazione dell'istogramma ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 }
 
 map<uint8_t, pair<uint32_t,uint32_t>> ParHuffman::create_code_map(TBBHistoReduce& tbbhr){
@@ -136,7 +131,7 @@ map<uint8_t, pair<uint32_t,uint32_t>> ParHuffman::create_code_map(TBBHistoReduce
 	par_create_huffman_tree(tbbhr._histo, leaves_vect);
 	//par_create_huffman_tree(histo, leaves_vect);
 	t1 = tick_count::now();
-	cerr << "[PAR] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
+	cerr << endl << "[PAR] La creazione dell'albero ha impiegato " << (t1 - t0).seconds() << " sec" << endl;
 
 	leaves_vect[0]->setRoot(true);
 
