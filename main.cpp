@@ -121,10 +121,14 @@ int main (int argc, char *argv[]) {
 			if(num_macrochunks==1) cerr << "\rWrite compressed file: 100%";
 			// Write exceeding byte
 			if(num_macrochunks*macrochunk_dim < file_len){ 
-				cerr << endl << "Byte exceeding are written...";
+				cerr << endl << file_len-num_macrochunks << " " << macrochunk_dim<< " Byte exceeding are written...";
 				par_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
 				par_huff.write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
+				output_file.write(reinterpret_cast<char*>(&par_huff._file_out[0]), par_huff._file_out.size());
+				par_huff._file_out.clear();
 			}
+			else
+				cerr << endl << file_len << " " << num_macrochunks*macrochunk_dim<< "Not exceeding byte!" << endl;
 			btw.flush();
 			tw2 = tick_count::now();
 			cerr << endl << "Time for all writing (buffer): " << (tw2-tw1).seconds() << " sec" << endl;
@@ -240,70 +244,6 @@ int main (int argc, char *argv[]) {
 		t1s = tick_count::now();
 		cerr << "[SEQ] La decompressione del file " << input_files[0] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
 	}
-
-
-
-
-
-
-
-
-	//if(!shell.get_mode().compare("compression")) {
-
-	//	if(shell.is_parallel()){
-	//		for(unsigned i=0; i<input_files.size(); ++i){
-	//			// --- Comprimi con compressione parallela
-	//			t0p = tick_count::now();
-	//			par_huff.read_file(input_files[i]);
-	//			par_huff.compress(input_files[i]);
-	//			t01p = tick_count::now();
-	//			par_huff.write_on_file();
-	//			t02p = tick_count::now();
-	//			cerr << "[PAR] Il trasferimento del buffer su HDD ha impiegato " << (t02p - t01p).seconds() << " sec" << endl << endl;
-	//			t1p = tick_count::now();
-	//			cerr << "[PAR] La compressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
-	//		}
-	//	} else {
-	//		for(unsigned i=0; i<input_files.size(); ++i){
-	//			// Comprimi con compressione sequenziale
-	//			t0s = tick_count::now();
-	//			seq_huff.read_file(input_files[i]);
-	//			seq_huff.compress(input_files[i]);
-	//			t01s = tick_count::now();
-	//			seq_huff.write_on_file();
-	//			t02s = tick_count::now();
-	//			cerr << "[SEQ] Il trasferimento del buffer su HDD ha impiegato " << (t02s - t01s).seconds() << " sec" << endl << endl;
-	//			t1s = tick_count::now();
-	//			cerr << "[SEQ] La compressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
-	//			
-	//		}
-	//	}
-	//		
-	//}
-	//else{
-	//	for(unsigned i=0; i<input_files.size(); ++i){
-	//		// --- Decomprimi con decompressione parallela
-	//		t0p = tick_count::now();
-
-	//		par_huff.read_file(input_files[i]);
-	//		par_huff.decompress(input_files[i]);
-	//		par_huff.write_on_file();
-
-	//		t1p = tick_count::now();
-	//		cerr << "[PAR] La decompressione del file " << input_files[i] << " ha impiegato " << (t1p - t0p).seconds() << " sec" << endl << endl;
-
-	//		// --- Decomprimi con decompressione sequenziale
-	//		t0s = tick_count::now();
-	//		
-	//		seq_huff.read_file(input_files[i]);
-	//		seq_huff.decompress(input_files[i]);
-	//		seq_huff.write_on_file();
-
-	//		t1s = tick_count::now();
-	//		cerr << "[SEQ] La decompressione del file " << input_files[i] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
-	//	}
-	//}
-
 
 	system("pause");
 

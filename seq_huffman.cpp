@@ -96,7 +96,7 @@ void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint6
 	//cerr << "Dimensione di un microchunk: " << microchunk_dim/1000000 << " MB" << endl;
 	// ------ FINE RIPARTIZIONE DINAMICA
 
-	for (size_t i=0; i < num_microchunk; ++i) {
+	for (size_t i=0; i <= num_microchunk; ++i) {
 		vector<pair<uint32_t, uint32_t>> buffer_map(microchunk_dim);
 		pair<uint32_t,uint32_t> element;
 		for( int r=i*microchunk_dim; r<(microchunk_dim*(i+1)); ++r ){
@@ -258,20 +258,18 @@ void SeqHuffman::decompress (string filename){
 		uint32_t tmp_code = 0;
 		uint32_t tmp_code_len = depthmap[0].first;
 		tmp_code = btr.read(depthmap[0].first);
-
 		// cerco il codice nella mappa, se non c'è un codice come quello che ho appena letto
 		// o se c'è ma ha lunghezza diversa da quella corrente, leggo un altro bit e lo
 		// aggiungo al codice per cercare di nuovo.
 		// questo modo mi sa che è super inefficiente... sicuramente si può fare di meglio
 		while(codes_map.find(tmp_code) == codes_map.end() || (codes_map.find(tmp_code) != codes_map.end() && tmp_code_len != codes_map[tmp_code].second )){
-
 			tmp_code = (tmp_code << 1) | (1 & btr.read_bit());
 			tmp_code_len++;
 		}
 
 		// se esco dal while ho trovato un codice, lo leggo, e lo scrivo sul file di output
 		pair<uint32_t,uint32_t> tmp_sym_pair = codes_map[tmp_code];
-		btw.write(tmp_sym_pair.first, 8);
+		btw.write(tmp_sym_pair.first, 8); 
 	}
 	btw.flush();
 
