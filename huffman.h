@@ -41,9 +41,6 @@ public:
 	void write_on_file(std::string filename);
 
 	// Funzione virtual da implementare nelle classi reali
-	virtual void compress(std::string filename) = 0;
-
-	// Funzione virtual da implementare nelle classi reali
 	// virtual void decompress(std::string in_file, std::string out_file) = 0;
 	virtual void decompress(std::string filename) = 0;
 };
