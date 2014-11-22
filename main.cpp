@@ -32,20 +32,6 @@ int main (int argc, char *argv[]) {
 	// Get list of input files
 	vector<string> input_files = shell.get_files();
 
-	// Check for chunking (Parallel and Sequential)
-	ifstream file_in(input_files[0], ifstream::in|ifstream::binary|fstream::ate);
-	// Whitespaces are accepted
-	file_in.unsetf (ifstream::skipws);
-	// Check file length
-	uint64_t file_len = (uint64_t) file_in.tellg();
-	uint64_t MAX_LEN = ten_MB; 
-	uint64_t num_macrochunks = 1;
-	if(file_len > MAX_LEN) 
-		num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
-	//cerr << "Number of macrochunks: " << num_macrochunks << endl;
-	uint64_t macrochunk_dim = file_len / num_macrochunks;
-	//cerr << "Dimension of macrochunks: " << (float)macrochunk_dim/1000000 << " MB"<< endl << endl;
-
 	if(!shell.get_mode().compare("compression")) {
 		for(int num_files=0;num_files < input_files.size();++num_files){
 			cout << "Compressing " << input_files[num_files] << "..." << endl;
@@ -55,6 +41,18 @@ int main (int argc, char *argv[]) {
 				// Utility
 				tick_count tt1, tt2;
 				tt1 = tick_count::now();
+
+				// Check for chunking 
+				ifstream file_in(input_files[num_files], ifstream::in|ifstream::binary|fstream::ate);
+				// Whitespaces are accepted
+				file_in.unsetf (ifstream::skipws);
+				// Check file length
+				uint64_t file_len = (uint64_t) file_in.tellg();
+				uint64_t MAX_LEN = ten_MB; 
+				uint64_t num_macrochunks = 1;
+				if(file_len > MAX_LEN) 
+					num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
+				uint64_t macrochunk_dim = file_len / num_macrochunks;
 
 				// Object for parallel compression
 				ParHuffman par_huff;
@@ -138,6 +136,18 @@ int main (int argc, char *argv[]) {
 				// Utility
 				tick_count tt1, tt2;
 				tt1 = tick_count::now();
+
+				// Check for chunking 
+				ifstream file_in(input_files[num_files], ifstream::in|ifstream::binary|fstream::ate);
+				// Whitespaces are accepted
+				file_in.unsetf (ifstream::skipws);
+				// Check file length
+				uint64_t file_len = (uint64_t) file_in.tellg();
+				uint64_t MAX_LEN = ten_MB; 
+				uint64_t num_macrochunks = 1;
+				if(file_len > MAX_LEN) 
+					num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
+				uint64_t macrochunk_dim = file_len / num_macrochunks;
 
 				// Object for sequential compression
 				SeqHuffman seq_huff;
