@@ -47,7 +47,7 @@ map<std::uint8_t, pair<uint32_t,uint32_t>> SeqHuffman::create_code_map(vector<ui
 BitWriter SeqHuffman::write_header(std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map){
 	// utili per ottimizzazione
 	tick_count t0, t1;
-	cerr << "[PAR] Scrittura su file" << endl;
+	cerr << "[SEQ] Scrittura su file" << endl;
 	t0 = tick_count::now();
 	// crea il file di output
 	BitWriter btw(_file_out);
@@ -96,7 +96,7 @@ void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint6
 	//cerr << "Dimensione di un microchunk: " << microchunk_dim/1000000 << " MB" << endl;
 	// ------ FINE RIPARTIZIONE DINAMICA
 
-	for (size_t i=0; i <= num_microchunk; ++i) {
+	for (size_t i=0; i < num_microchunk; ++i) {
 		vector<pair<uint32_t, uint32_t>> buffer_map(microchunk_dim);
 		pair<uint32_t,uint32_t> element;
 		for( int r=i*microchunk_dim; r<(microchunk_dim*(i+1)); ++r ){

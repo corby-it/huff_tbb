@@ -209,6 +209,8 @@ int main (int argc, char *argv[]) {
 				cerr << endl << "Byte exceeding are written...";
 				seq_huff.read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
 				seq_huff.write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
+				output_file.write(reinterpret_cast<char*>(&seq_huff._file_out[0]), seq_huff._file_out.size());
+				seq_huff._file_out.clear();
 			}
 			btw.flush();
 			tw2 = tick_count::now();
