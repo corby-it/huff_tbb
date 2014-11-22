@@ -34,9 +34,10 @@ int main (int argc, char *argv[]) {
 
 	if(!shell.get_mode().compare("compression")) {
 		for(int num_files=0;num_files < input_files.size();++num_files){
-			cout << "Compressing " << input_files[num_files] << "..." << endl;
 
 			if(shell.is_parallel()){ //PARALLEL COMPRESSION
+
+				cout << "Parallel Compressing " << input_files[num_files] << "..." << endl;
 
 				// Utility
 				tick_count tt1, tt2;
@@ -132,6 +133,8 @@ int main (int argc, char *argv[]) {
 				cerr <<  "Total time for compression: " << (tt2-tt1).seconds() << " sec" << endl << endl;
 
 			} else { //SEQUENTIAL COMPRESSION
+
+				cout << "Sequential Compressing " << input_files[num_files] << "..." << endl;
 				
 				// Utility
 				tick_count tt1, tt2;
