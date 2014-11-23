@@ -11,7 +11,14 @@
 #define one_GB			1000000000
 #define one_hundred_MB	100000000
 #define ten_MB			10000000
-#define one_MB			1000000 
+#define one_MB			1000000
+// per leggere l'header stimo che sia lungo al massimo 1 KB
+// 4B per il magic number
+// 4B per la lunghezza del nome del file originale
+// da 0B a 500B per il nome del file vero e proprio (un po' esagerato ma fa lo stesso)
+// 4B per il numero di simboli
+// 512B per il massimo numero possibile di coppie <lunghezza_codice, simbolo>
+#define header_dim		1024
 
 using namespace std;
 using namespace tbb;
@@ -187,7 +194,7 @@ void SeqHuffman::decompress_chunked (string filename){
 	// leggo solo 1MB per essere sicuro di leggere tutto l'header
 	// TODO
 	// DA SISTEMARE!! bisognerebbe leggere solamente i byte necessari per leggere l'header, non 1MB a caso
-	read_file(file_in, 0, one_MB);
+	read_file(file_in, 0, header_dim);
 
 	BitReader btr(_file_in);
 	BitWriter btw(_file_out);
