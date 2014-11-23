@@ -15,6 +15,7 @@ public:
 	BitWriter write_header(std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map);
 	void write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map, BitWriter& btw);
 	void decompress(std::string filename);
+	void decompress_chunked(std::string filename);
 
 private:
 

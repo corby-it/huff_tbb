@@ -135,7 +135,7 @@ int main (int argc, char *argv[]) {
 			} else { //SEQUENTIAL COMPRESSION
 
 				cout << "Sequential Compressing " << input_files[num_files] << "..." << endl;
-				
+
 				// Utility
 				tick_count tt1, tt2;
 				tt1 = tick_count::now();
@@ -238,9 +238,11 @@ int main (int argc, char *argv[]) {
 		//par_huff.decompress(input_files[0]);
 		//par_huff.write_on_file();
 
-		seq_huff.read_file(input_files[0]);
-		seq_huff.decompress(input_files[0]);
-		seq_huff.write_on_file(input_files[0]);
+		//seq_huff.read_file(input_files[0]);
+		//seq_huff.decompress(input_files[0]);
+		//seq_huff.write_on_file(input_files[0]);
+
+		seq_huff.decompress_chunked(input_files[0]);
 
 		//cerr << "[SEQ] La decompressione del file " << input_files[0] << " ha impiegato " << (t1s - t0s).seconds() << " sec" << endl << endl;
 	}
