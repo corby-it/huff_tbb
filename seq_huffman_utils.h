@@ -4,16 +4,24 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include <algorithm> //std::sort
+#include <algorithm>
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "seq_huffman_node.h"
 
 // CLASSES
 
+//! SeqTriplet struct
+/*!
+A struct used to hold the three important values related to the a symbols in the
+huffman compression process
+*/
 struct SeqTriplet{
+	//! The symbol itself
 	std::uint8_t symbol;
+	//! The code assigned to the symbol
 	std::uint32_t code;
+	//! The code's length
 	std::uint32_t code_len;
 };
 
@@ -27,6 +35,12 @@ typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
 
 // METHODS
 
+//! Sequential depth compare function.
+/*!
+A function used to compare elements of a depthmap. Used for sorting.
+\param first The first DepthMapElement to be compared.
+\param second The second DepthMapElement to be compared.
+*/
 bool seq_depth_compare(DepthMapElement first, DepthMapElement second){
 	// Se le lunghezze dei simboli sono diverse, confronta quelle
 	if(first.first != second.first)
@@ -36,6 +50,12 @@ bool seq_depth_compare(DepthMapElement first, DepthMapElement second){
 		return (first.second < second.second);
 }
 
+//! Sequential creation of the huffman tree function.
+/*!
+A function used to create the huffman tree given the histogram.
+\param histo The histogram of the input file.
+\param leaves_vect The vector containing the tree's leaves.
+*/
 void seq_create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
@@ -80,6 +100,13 @@ void seq_create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 	}
 }
 
+//! Sequential depth assign function.
+/*!
+A function used to the depth values to each node of the huffman tree.
+It's a recursive function that explores the tree depth-first.
+\param tbb_huff_node The current node.
+\param depthmap The map that will contain the depth values.
+*/
 void seq_depth_assign(SeqHuffNode* huff_node, DepthMap & depthmap){
 	if(huff_node->isLeaf()){
 		depthmap.push_back(DepthMapElement(huff_node->getDepth(), huff_node->getSymb()));
@@ -103,6 +130,12 @@ void seq_depth_assign(SeqHuffNode* huff_node, DepthMap & depthmap){
 	}
 }
 
+//! Sequential canonical codes function.
+/*!
+A function used to compute huffman's canonical codes.
+\param depthmap The input depthmap, a structure containing the symbols and their depth in the tree.
+\param codes The output vector containing the resulting triplets.
+*/
 void seq_canonical_codes(DepthMap & depthmap, std::vector<SeqTriplet>& codes){
 	SeqTriplet curr_code;
 	curr_code.code = 0;

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include <algorithm> //std::sort, fill
+#include <algorithm>
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "tbb/parallel_reduce.h"
@@ -20,13 +20,26 @@ typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
 typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
 typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 
-
+//! ParTriplet struct
+/*!
+A struct used to hold the three important values related to the a symbols in the
+huffman compression process
+*/
 struct ParTriplet{
+	//! The symbol itself
 	std::uint8_t symbol;
+	//! The code assigned to the symbol
 	std::uint32_t code;
+	//! The code's length
 	std::uint32_t code_len;
 };
 
+//! Parallel depth compare function.
+/*!
+A function used to compare elements of a depthmap. Used for sorting.
+\param first The first DepthMapElement to be compared.
+\param second The second DepthMapElement to be compared.
+*/
 bool par_depth_compare(DepthMapElement first, DepthMapElement second){
 	// Se le lunghezze dei simboli sono diverse, confronta quelle
 	if(first.first != second.first)
@@ -36,6 +49,12 @@ bool par_depth_compare(DepthMapElement first, DepthMapElement second){
 		return (first.second < second.second);
 }
 
+//! Parallel canonical codes function.
+/*!
+A function used to compute huffman's canonical codes.
+\param depthmap The input depthmap, a structure containing the symbols and their depth in the tree.
+\param codes The output vector containing the resulting triplets.
+*/
 void par_canonical_codes(DepthMap & depthmap, std::vector<ParTriplet>& codes){
 	ParTriplet curr_code;
 	curr_code.code = 0;
@@ -59,6 +78,12 @@ void par_canonical_codes(DepthMap & depthmap, std::vector<ParTriplet>& codes){
 
 }
 
+//! Parallel creation of the huffman tree function.
+/*!
+A function used to create the huffman tree given the histogram.
+\param histo The histogram of the input file.
+\param leaves_vect The vector containing the tree's leaves.
+*/
 void par_create_huffman_tree(TBBHisto histo, TBBLeavesVector& leaves_vect){
 
 	// creo un vettore che conterrà le foglie dell'albero di huffman, ciascuna con simbolo e occorrenze
@@ -89,7 +114,7 @@ void par_create_huffman_tree(TBBHisto histo, TBBLeavesVector& leaves_vect){
 		ParHuffNode* node1;
 		ParHuffNode* node2;
 		node1 = vec.back();
-		
+
 		vec.pop_back(); 
 		node2 = vec.back();
 		vec.pop_back(); 
@@ -126,6 +151,13 @@ void par_create_huffman_tree(TBBHisto histo, TBBLeavesVector& leaves_vect){
 	//std::cerr << "Arrivo fino a qui: punto 3" << std::endl;
 }
 
+//! Parallel depth assign function.
+/*!
+A function used to the depth values to each node of the huffman tree.
+It's a recursive function that explores the tree depth-first.
+\param tbb_huff_node The current node.
+\param depthmap The map that will contain the depth values.
+*/
 void par_depth_assign(ParHuffNode* tbb_huff_node, DepthMap & depthmap){
 	if(tbb_huff_node->isLeaf()){
 		depthmap.push_back(DepthMapElement(tbb_huff_node->getDepth(), tbb_huff_node->getSymb()));

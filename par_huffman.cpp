@@ -1,20 +1,108 @@
 #include <iostream>
 #include <fstream>
-
 #include "par_huffman.h"
 #include "par_huffman_utils.h"
-
 #include "bitwriter.h"
 #include "bitreader.h"
-
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
-
 #include <string>
-#include <utility> // pair
+#include <utility>
 
 using namespace std;
 using namespace tbb;
+
+void ParHuffman::compress_chunked(string filename){
+	// Utility
+	tick_count tt1, tt2;
+	tt1 = tick_count::now();
+
+	// Check for chunking 
+	ifstream file_in(filename, ifstream::in|ifstream::binary|fstream::ate);
+	// Whitespaces are accepted
+	file_in.unsetf (ifstream::skipws);
+	// Check file length
+	uint64_t file_len = (uint64_t) file_in.tellg();
+	uint64_t MAX_LEN = HUF_TEN_MB; 
+	uint64_t num_macrochunks = 1;
+	if(file_len > MAX_LEN) 
+		num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
+	uint64_t macrochunk_dim = file_len / num_macrochunks;
+
+	//Initialize parallel object
+	init(filename);
+
+	// Global histogram
+	TBBHistoReduce tbbhr;
+
+	// For each macrochunk -> read and histo
+	tick_count th1, th2;
+	th1 = tick_count::now();
+	for(uint64_t k=0; k < num_macrochunks; ++k) {
+		read_file(file_in, k*macrochunk_dim, macrochunk_dim);
+		create_histo(tbbhr, macrochunk_dim);
+		cerr << "\rHuffman computation: " << ((100*(k+1))/num_macrochunks) << "%";
+	}
+	th2 = tick_count::now();
+	if(num_macrochunks==1) cerr << "\rHuffman computation: 100%";
+	//cerr << endl << "Time for all sub-histograms: " << (th2-th1).seconds() << " sec" << endl;
+
+	// For each exceeding byte -> read and histo
+	if(num_macrochunks*macrochunk_dim < file_len){ 
+		read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+		create_histo(tbbhr, (file_len - num_macrochunks*macrochunk_dim));
+	}
+
+	// Create map <symbol, <code, len_code>>
+	map<uint8_t, pair<uint32_t,uint32_t>> codes_map = create_code_map(tbbhr);
+
+	// Write file header
+	BitWriter btw = write_header(codes_map);
+
+	MEMORYSTATUSEX status;
+	status.dwLength = sizeof(status);
+	GlobalMemoryStatusEx(&status);
+	uint64_t available_ram = status.ullAvailPhys;
+
+	ofstream output_file(_output_filename, fstream::out|fstream::binary);
+	cerr << endl << "Output filename: " << _output_filename << endl;
+
+	// Write compressed file chunk-by-chunk
+	tick_count tw1, tw2;
+	tw1 = tick_count::now();
+	for(uint64_t k=0; k < num_macrochunks; ++k) {
+		read_file(file_in, k*macrochunk_dim, macrochunk_dim);
+		write_chunks_compressed(available_ram, macrochunk_dim, codes_map, btw);
+		output_file.write(reinterpret_cast<char*>(&_file_out[0]), _file_out.size());
+		_file_out.clear();
+		cerr << "\rWrite compressed file: " << ((100*(k+1))/num_macrochunks) << "%";
+	}
+	if(num_macrochunks==1) cerr << "\rWrite compressed file: 100%";
+	// Write exceeding byte
+	if(num_macrochunks*macrochunk_dim < file_len){ 
+		read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+		write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
+		output_file.write(reinterpret_cast<char*>(&_file_out[0]), _file_out.size());
+		_file_out.clear();
+	}
+	btw.flush();
+	tw2 = tick_count::now();
+	//cerr << endl << "Time for all writing (buffer): " << (tw2-tw1).seconds() << " sec" << endl;
+
+	// Write on HDD
+	tick_count twhd1, twhd2;
+	twhd1 = tick_count::now();
+	if(_file_out.size() != 0)
+		output_file.write(reinterpret_cast<char*>(&_file_out[0]), _file_out.size());
+	output_file.close();
+	file_in.close();
+	twhd2 = tick_count::now();
+	//cerr << "Time for all writing (Hard Disk): " << (twhd2-twhd1).seconds() << " sec" << endl;
+	cerr << endl;
+
+	tt2 = tick_count::now();
+	cerr <<  "Total time for compression: " << (tt2-tt1).seconds() << " sec" << endl << endl;
+}
 
 void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macrochunk_dim, map<uint8_t, pair<uint32_t,uint32_t>> codes_map, BitWriter& btw){
 
@@ -135,6 +223,10 @@ map<uint8_t, pair<uint32_t,uint32_t>> ParHuffman::create_code_map(TBBHistoReduce
 		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
 	}
 	return codes_map;
+
+}
+
+void ParHuffman::decompress_chunked (string filename) {
 
 }
 

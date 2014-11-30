@@ -8,18 +8,6 @@
 #include "seq_huffman_utils.h"
 #include <utility> // pair
 
-#define one_GB			1000000000
-#define one_hundred_MB	100000000
-#define ten_MB			10000000
-#define one_MB			1000000
-// per leggere l'header stimo che sia lungo al massimo 1 KB
-// 4B per il magic number
-// 4B per la lunghezza del nome del file originale
-// da 0B a 500B per il nome del file vero e proprio (un po' esagerato ma fa lo stesso)
-// 4B per il numero di simboli
-// 512B per il massimo numero possibile di coppie <lunghezza_codice, simbolo>
-#define header_dim		1024
-
 using namespace std;
 using namespace tbb;
 
@@ -56,7 +44,7 @@ map<std::uint8_t, pair<uint32_t,uint32_t>> SeqHuffman::create_code_map(vector<ui
 	return codes_map;
 }
 
-BitWriter SeqHuffman::write_header(std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map){
+BitWriter SeqHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_map){
 	// utili per ottimizzazione
 	tick_count t0, t1;
 	t0 = tick_count::now();
@@ -126,6 +114,98 @@ void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint6
 	}
 }
 
+void SeqHuffman::compress_chunked(string filename){
+	// Utility
+	tick_count tt1, tt2;
+	tt1 = tick_count::now();
+
+	// Check for chunking 
+	ifstream file_in(filename, ifstream::in|ifstream::binary|fstream::ate);
+	// Whitespaces are accepted
+	file_in.unsetf (ifstream::skipws);
+	// Check file length
+	uint64_t file_len = (uint64_t) file_in.tellg();
+	uint64_t MAX_LEN = HUF_TEN_MB; 
+	uint64_t num_macrochunks = 1;
+	if(file_len > MAX_LEN) 
+		num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
+	uint64_t macrochunk_dim = file_len / num_macrochunks;
+
+	//Initialize sequential object
+	init(filename);
+
+	// Global histogram
+	vector<uint32_t> histo(256);
+
+	// For each macrochunk -> read and histo
+	tick_count th1, th2;
+	th1 = tick_count::now();
+	for(uint64_t k=0; k < num_macrochunks; ++k) {
+		read_file(file_in, k*macrochunk_dim, macrochunk_dim);
+		create_histo(histo, macrochunk_dim);
+		cerr << "\rHuffman computation: " << ((100*(k+1))/num_macrochunks) << "%";
+	}
+	th2 = tick_count::now();
+	if(num_macrochunks==1) cerr << "\rHistogram computation: 100%";
+	//cerr << endl << "Time for all sub-histograms: " << (th2-th1).seconds() << " sec" << endl << endl;
+
+	// For each exceeding byte -> read and histo
+	if(num_macrochunks*macrochunk_dim < file_len){ 
+		read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+		create_histo(histo, (file_len - num_macrochunks*macrochunk_dim));
+	}
+
+	// Create map <symbol, <code, len_code>>
+	map<uint8_t, pair<uint32_t,uint32_t>> codes_map = create_code_map(histo);
+
+	// Write file header
+	BitWriter btw = write_header(codes_map);
+
+	MEMORYSTATUSEX status;
+	status.dwLength = sizeof(status);
+	GlobalMemoryStatusEx(&status);
+	uint64_t available_ram = status.ullAvailPhys;
+
+	ofstream output_file(_output_filename, fstream::out|fstream::binary);
+	cerr << endl << "Output filename: " << _output_filename << endl;
+
+	// Write compressed file chunk-by-chunk
+	tick_count tw1, tw2;
+	tw1 = tick_count::now();
+	for(uint64_t k=0; k < num_macrochunks; ++k) {
+		read_file(file_in, k*macrochunk_dim, macrochunk_dim);
+		write_chunks_compressed(available_ram, macrochunk_dim, codes_map, btw);
+		output_file.write(reinterpret_cast<char*>(&_file_out[0]), _file_out.size());
+		_file_out.clear();
+		cerr << "\rWrite compressed file: " << ((100*(k+1))/num_macrochunks) << "%";
+	}
+	if(num_macrochunks==1) cerr << "\rWrite compressed file: 100%";
+	// Write exceeding byte
+	if(num_macrochunks*macrochunk_dim < file_len){ 
+		read_file(file_in, num_macrochunks*macrochunk_dim, file_len-num_macrochunks*macrochunk_dim);
+		write_chunks_compressed(available_ram, file_len-(num_macrochunks*macrochunk_dim), codes_map, btw);
+		output_file.write(reinterpret_cast<char*>(&_file_out[0]), _file_out.size());
+		_file_out.clear();
+	}
+	btw.flush();
+	tw2 = tick_count::now();
+	//cerr << endl << "Time for all writing (buffer): " << (tw2-tw1).seconds() << " sec" << endl;
+
+	// Write on HDD
+	tick_count twhd1, twhd2;
+	twhd1 = tick_count::now();
+	if(_file_out.size() != 0)
+		output_file.write(reinterpret_cast<char*>(&_file_out[0]), _file_out.size());
+	output_file.close();
+	file_in.close();
+	twhd2 = tick_count::now();
+	//cerr << "Time for all writing (Hard Disk): " << (twhd2-twhd1).seconds() << " sec" << endl;
+	cerr << endl;
+
+	tt2 = tick_count::now();
+	cerr << "Total time for compression: " <<  (tt2 - tt1).seconds() << " sec" << endl << endl;
+}
+
 void SeqHuffman::decompress (string filename){
 
 	BitReader btr(_file_in);
@@ -191,10 +271,8 @@ void SeqHuffman::decompress_chunked (string filename){
 	// Whitespaces are accepted
 	file_in.unsetf (ifstream::skipws);
 
-	// leggo solo 1MB per essere sicuro di leggere tutto l'header
-	// TODO
-	// DA SISTEMARE!! bisognerebbe leggere solamente i byte necessari per leggere l'header, non 1MB a caso
-	read_file(file_in, 0, header_dim);
+	// leggo quanto basta per leggere tutto l'header
+	read_file(file_in, 0, HUF_HEADER_DIM);
 
 	BitReader btr(_file_in);
 	BitWriter btw(_file_out);
@@ -243,7 +321,7 @@ void SeqHuffman::decompress_chunked (string filename){
 	// Check file length
 	file_in.seekg(0, ios::end);
 	uint64_t file_len = (uint64_t) file_in.tellg() - data_start;
-	uint64_t MAX_LEN = ten_MB; 
+	uint64_t MAX_LEN = HUF_TEN_MB; 
 	uint64_t num_macrochunks = 1;
 	if(file_len > MAX_LEN) 
 		num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
