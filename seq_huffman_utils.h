@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <utility> // pair
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "seq_huffman_node.h"
@@ -24,6 +25,7 @@ struct SeqTriplet{
 	//! The code's length
 	std::uint32_t code_len;
 };
+
 
 typedef std::vector<std::uint32_t> cont_t;
 typedef cont_t::iterator iter_t;

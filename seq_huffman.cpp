@@ -6,7 +6,6 @@
 #include "tbb/concurrent_vector.h"
 #include "seq_huffman.h"
 #include "seq_huffman_utils.h"
-#include <utility> // pair
 
 using namespace std;
 using namespace tbb;
@@ -16,7 +15,7 @@ void SeqHuffman::create_histo(vector<uint32_t>& histo, uint64_t chunk_dim){
 		histo[_file_in[i]]++;
 }
 
-map<std::uint8_t, pair<uint32_t,uint32_t>> SeqHuffman::create_code_map(vector<uint32_t>& histo){
+CodeVector SeqHuffman::create_code_map(vector<uint32_t>& histo){
 	tick_count t0, t1;
 	t0 = tick_count::now();
 	LeavesVector leaves_vect;
@@ -35,16 +34,18 @@ map<std::uint8_t, pair<uint32_t,uint32_t>> SeqHuffman::create_code_map(vector<ui
 	vector<SeqTriplet> codes;
 	seq_canonical_codes(depthmap, codes);
 
-	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
-	map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	// crea un vettore <codice, lunghezza_codice> - l'indice i è il simbolo
+	CodeVector codes_map;
 	for(unsigned i=0; i<codes.size(); ++i){
-		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
+		codes_map.num_symbols++;
+		codes_map.codes_vector[codes[i].symbol] = pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len);
+		codes_map.presence_vector[codes[i].symbol] = true;
 	}
 
 	return codes_map;
 }
 
-BitWriter SeqHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_map){
+BitWriter SeqHuffman::write_header(CodeVector codes_map){
 	// utili per ottimizzazione
 	tick_count t0, t1;
 	t0 = tick_count::now();
@@ -60,15 +61,15 @@ BitWriter SeqHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_m
 		btw.write(_original_filename[i], 8);
 
 	// scrivo il numero di simboli
-	btw.write((uint32_t)codes_map.size(), 32);
+	btw.write((uint32_t)codes_map.num_symbols, 32);
 
 	// creo un'altra struttura ordinata per scrivere i simboli in ordine, dal più corto al più lungo
 	// la depthmap contiene le coppie <lunghezza, simbolo>
 	DepthMap depthmap;
 	for(uint32_t i=0; i<256; ++i){
-		if(codes_map.find(i) != codes_map.end()){
+		if(codes_map.presence_vector[i]==true){
 			DepthMapElement tmp;
-			tmp.first = codes_map[i].second;
+			tmp.first = codes_map.codes_vector[i].second;
 			tmp.second = i;
 			depthmap.push_back(tmp);
 		}
@@ -83,7 +84,7 @@ BitWriter SeqHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_m
 	return btw;
 }
 
-void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map, BitWriter& btw){
+void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, CodeVector codes_map, BitWriter& btw){
 
 	uint64_t num_microchunk = 1 + (macrochunk_dim*8-1)/available_ram;
 	if(num_microchunk==0)
@@ -97,7 +98,7 @@ void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint6
 		vector<pair<uint32_t, uint32_t>> buffer_map(microchunk_dim);
 		pair<uint32_t,uint32_t> element;
 		for( int r=i*microchunk_dim; r<(microchunk_dim*(i+1)); ++r ){
-			element = codes_map[_file_in[r]];
+			element = codes_map.codes_vector[_file_in[r]];
 			buffer_map[r-i*microchunk_dim].first = element.first;
 			buffer_map[r-i*microchunk_dim].second = element.second;
 		}
@@ -109,7 +110,7 @@ void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint6
 	// Legge la parte del file che viene tagliata dall'approssimazione nella divisione in chunks
 	pair<uint32_t,uint32_t> element;
 	for (size_t i=num_microchunk*microchunk_dim; i < macrochunk_dim; i++){
-		element = codes_map[_file_in[i]];
+		element = codes_map.codes_vector[_file_in[i]];
 		btw.write(element.first, element.second);
 	}
 }
@@ -155,8 +156,8 @@ void SeqHuffman::compress_chunked(string filename){
 		create_histo(histo, (file_len - num_macrochunks*macrochunk_dim));
 	}
 
-	// Create map <symbol, <code, len_code>>
-	map<uint8_t, pair<uint32_t,uint32_t>> codes_map = create_code_map(histo);
+	// Create vector <code, len_code> - index i is the symbol
+	CodeVector codes_map = create_code_map(histo);
 
 	// Write file header
 	BitWriter btw = write_header(codes_map);

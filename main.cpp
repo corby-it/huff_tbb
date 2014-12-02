@@ -10,10 +10,6 @@
 using namespace std;
 using tbb::tick_count;
 
-//#define one_GB			1000000000
-//#define one_hundred_MB	100000000
-//#define ten_MB			10000000
-//#define one_MB			1000000 
 
 int main (int argc, char *argv[]) {
 
