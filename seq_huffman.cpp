@@ -3,7 +3,6 @@
 #include "bitwriter.h"
 #include "bitreader.h"
 #include "tbb/tbb.h"
-#include "tbb/concurrent_vector.h"
 #include "seq_huffman.h"
 #include "seq_huffman_utils.h"
 
@@ -45,7 +44,7 @@ CodeVector SeqHuffman::create_code_map(vector<uint32_t>& histo){
 	return codes_map;
 }
 
-BitWriter SeqHuffman::write_header(CodeVector codes_map){
+BitWriter SeqHuffman::write_header(CodeVector& codes_map){
 	// utili per ottimizzazione
 	tick_count t0, t1;
 	t0 = tick_count::now();
@@ -126,7 +125,8 @@ void SeqHuffman::compress_chunked(string filename){
 	file_in.unsetf (ifstream::skipws);
 	// Check file length
 	uint64_t file_len = (uint64_t) file_in.tellg();
-	uint64_t MAX_LEN = HUF_TEN_MB; 
+	uint64_t MAX_LEN = HUF_ONE_GB; 
+	cerr << "MAX_LEN: " << MAX_LEN/1000000 << "MB" << endl;
 	uint64_t num_macrochunks = 1;
 	if(file_len > MAX_LEN) 
 		num_macrochunks = 1 + (file_len-1)/ MAX_LEN;

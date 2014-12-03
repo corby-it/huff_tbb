@@ -71,7 +71,7 @@ public:
       \param tbbhr The histogram object.
 	  \return returns a map that contains symbols, canonical codes and codes lengths( <symbol, <code, code_len>>).
     */
-	std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> ParHuffman::create_code_map(TBBHistoReduce& tbbhr);
+	CodeVector ParHuffman::create_code_map(TBBHistoReduce& tbbhr);
 	
 	//! Write header function
     /*!
@@ -86,7 +86,7 @@ public:
       \param codes_map The codes map object.
 	  \return Returns the bit writer object used to write the header, it will be used to write all the rest of the file.
     */
-	BitWriter write_header(std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map);
+	BitWriter write_header(CodeVector& codes_map);
 	
 	//! Write compressed chunks function
     /*!
@@ -97,7 +97,7 @@ public:
 	  \param codes_map The codes map computed from the histogram.
 	  \param btw A reference to the bit writer object used to write to the output vector.
     */
-	void write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, std::map<std::uint8_t, std::pair<std::uint32_t,std::uint32_t>> codes_map, BitWriter& btw);
+	void write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, CodeVector codes_map, BitWriter& btw);
 
 	//! Compress function
     /*!

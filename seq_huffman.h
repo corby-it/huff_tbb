@@ -3,23 +3,6 @@
 
 #include "huffman.h"
 
-struct CodeVector{
-
-	std::uint8_t num_symbols;
-	std::vector<bool> presence_vector;
-	std::vector<std::pair<std::uint32_t,std::uint32_t>> codes_vector;
-	
-	CodeVector(){
-
-		num_symbols=0;
-
-		for(int i = 0; i<256; ++i){
-			codes_vector.push_back(std::pair<uint32_t,uint32_t>(NULL,NULL));
-			presence_vector.push_back(false);
-		}
-
-	}
-};
 
 //! SeqHuffman class, used to compress and decompress only in a sequential way.
 /*!
@@ -60,7 +43,7 @@ public:
       \param codes_map The codes map object.
 	  \return Returns the bit writer object used to write the header, it will be used to write all the rest of the file.
     */
-	BitWriter write_header(CodeVector codes_map);
+	BitWriter write_header(CodeVector& codes_map);
 
 	//! Write compressed chunks function
     /*!

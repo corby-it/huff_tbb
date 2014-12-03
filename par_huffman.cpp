@@ -6,8 +6,6 @@
 #include "bitreader.h"
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
-#include <string>
-#include <utility>
 
 using namespace std;
 using namespace tbb;
@@ -23,7 +21,8 @@ void ParHuffman::compress_chunked(string filename){
 	file_in.unsetf (ifstream::skipws);
 	// Check file length
 	uint64_t file_len = (uint64_t) file_in.tellg();
-	uint64_t MAX_LEN = HUF_TEN_MB; 
+	uint64_t MAX_LEN = HUF_ONE_GB;
+	cerr << "MAX_LEN: " << MAX_LEN/1000000 << "MB" << endl;
 	uint64_t num_macrochunks = 1;
 	if(file_len > MAX_LEN) 
 		num_macrochunks = 1 + (file_len-1)/ MAX_LEN;
@@ -53,8 +52,8 @@ void ParHuffman::compress_chunked(string filename){
 		create_histo(tbbhr, (file_len - num_macrochunks*macrochunk_dim));
 	}
 
-	// Create map <symbol, <code, len_code>>
-	map<uint8_t, pair<uint32_t,uint32_t>> codes_map = create_code_map(tbbhr);
+	// crea la mappa dei codici
+	CodeVector codes_map = create_code_map(tbbhr);
 
 	// Write file header
 	BitWriter btw = write_header(codes_map);
@@ -104,7 +103,7 @@ void ParHuffman::compress_chunked(string filename){
 	cerr <<  "Total time for compression: " << (tt2-tt1).seconds() << " sec" << endl << endl;
 }
 
-void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macrochunk_dim, map<uint8_t, pair<uint32_t,uint32_t>> codes_map, BitWriter& btw){
+void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macrochunk_dim, CodeVector codes_map, BitWriter& btw){
 
 	uint64_t num_microchunk = 1 + (macrochunk_dim*8-1)/available_ram;
 	if(num_microchunk==0)
@@ -119,7 +118,7 @@ void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macroc
 		parallel_for(blocked_range<int>(i*microchunk_dim, microchunk_dim*(i+1),10000), [&](const blocked_range<int>& range) {
 			pair<uint32_t,uint32_t> element;
 			for( int r=range.begin(); r!=range.end(); ++r ){
-				element = codes_map[_file_in[r]];
+				element = codes_map.codes_vector[_file_in[r]];
 				buffer_map[r-i*microchunk_dim].first = element.first;
 				buffer_map[r-i*microchunk_dim].second = element.second;
 			}
@@ -133,12 +132,12 @@ void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macroc
 	pair<uint32_t,uint32_t> element;
 	//cerr << "Scrivo un byte avanzato, infatti (num_microchunk*microchunk_dim)=" << num_microchunk*microchunk_dim << " < file_len=" << macrochunk_dim << endl;
 	for (size_t i=num_microchunk*microchunk_dim; i < macrochunk_dim; i++){
-		element = codes_map[_file_in[i]];
+		element = codes_map.codes_vector[_file_in[i]];
 		btw.write(element.first, element.second);
 	}
 }
 
-BitWriter ParHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_map){
+BitWriter ParHuffman::write_header(CodeVector& codes_map){
 
 	// utili per ottimizzazione
 	tick_count t0, t1;
@@ -163,15 +162,15 @@ BitWriter ParHuffman::write_header(map<uint8_t, pair<uint32_t,uint32_t>> codes_m
 		btw.write(_original_filename[i], 8);
 
 	// scrivo il numero di simboli
-	btw.write((uint32_t)codes_map.size(), 32);
-
+	btw.write((uint32_t)codes_map.num_symbols, 32);
+	
 	// creo un'altra struttura ordinata per scrivere i simboli in ordine, dal più corto al più lungo
 	// la depthmap contiene le coppie <lunghezza, simbolo>
 	DepthMap depthmap;
 	for(uint32_t i=0; i<256; ++i){
-		if(codes_map.find(i) != codes_map.end()){
+		if(codes_map.presence_vector[i]==true){
 			DepthMapElement tmp;
-			tmp.first = codes_map[i].second;
+			tmp.first = codes_map.codes_vector[i].second;
 			tmp.second = i;
 			depthmap.push_back(tmp);
 		}
@@ -191,7 +190,7 @@ void ParHuffman::create_histo(TBBHistoReduce& tbbhr, uint64_t chunk_dim){
 	parallel_reduce(blocked_range<uint8_t*>(_file_in.data(),_file_in.data()+chunk_dim), tbbhr);
 }
 
-map<uint8_t, pair<uint32_t,uint32_t>> ParHuffman::create_code_map(TBBHistoReduce& tbbhr){
+CodeVector ParHuffman::create_code_map(TBBHistoReduce& tbbhr){
 	// utili per ottimizzazione
 	tick_count t0, t1;
 
@@ -218,12 +217,14 @@ map<uint8_t, pair<uint32_t,uint32_t>> ParHuffman::create_code_map(TBBHistoReduce
 	par_canonical_codes(depthmap, codes);
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
-	map<uint8_t, pair<uint32_t,uint32_t>> codes_map;
+	CodeVector codes_map;
 	for(unsigned i=0; i<codes.size(); ++i){
-		codes_map.insert(pair<uint8_t,pair<uint32_t,uint32_t>>(codes[i].symbol, pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len)));
+		codes_map.num_symbols++;
+		codes_map.codes_vector[codes[i].symbol] = pair<uint32_t,uint32_t>(codes[i].code,codes[i].code_len);
+		codes_map.presence_vector[codes[i].symbol] = true;
 	}
-	return codes_map;
 
+	return codes_map;
 }
 
 void ParHuffman::decompress_chunked (string filename) {

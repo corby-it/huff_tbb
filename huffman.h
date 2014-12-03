@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <utility> // pair
 
 // Constants
 #define HUF_MAGIC_NUMBER	0x42435001
@@ -22,6 +23,24 @@
 // 4B per il numero di simboli
 // 512B per il massimo numero possibile di coppie <lunghezza_codice, simbolo>
 #define HUF_HEADER_DIM			1024
+
+
+struct CodeVector{
+
+	std::uint32_t num_symbols;
+	std::vector<bool> presence_vector;
+	std::vector<std::pair<std::uint32_t,std::uint32_t>> codes_vector;
+	
+	CodeVector(){
+		num_symbols=0;
+		for(int i = 0; i<256; ++i){
+			codes_vector.push_back(std::pair<uint32_t,uint32_t>(NULL,NULL));
+			presence_vector.push_back(false);
+		}
+	}
+
+};
+
 
 //!  Huffman is the main Huffman compression/decompression class.
 /*!
