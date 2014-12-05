@@ -47,12 +47,8 @@ int main (int argc, char *argv[]) {
 			}
 		}
 	} else {// DECOMPRESS
+
 		SeqHuffman seq_huff;
-
-		//seq_huff.read_file(input_files[0]);
-		//seq_huff.decompress(input_files[0]);
-		//seq_huff.write_on_file(input_files[0]);
-
 		seq_huff.decompress_chunked(input_files[0]);
 
 	}

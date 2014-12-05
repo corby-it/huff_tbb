@@ -207,64 +207,6 @@ void SeqHuffman::compress_chunked(string filename){
 	cerr << "Total time for compression: " <<  (tt2 - tt1).seconds() << " sec" << endl << endl;
 }
 
-void SeqHuffman::decompress (string filename){
-
-	BitReader btr(_file_in);
-	BitWriter btw(_file_out);
-
-	// leggo il magic number
-	uint32_t magic_number = btr.read(32);
-	if(magic_number != HUF_MAGIC_NUMBER){
-		cerr << "Error: unknown format, wrong magic number..." << endl;
-		exit(1);
-	}
-
-	// leggo la lunghezza del nome del file
-	uint32_t fname_length = btr.read(32);
-	// leggo il nome del file originale e setto output filename
-	vector<uint8_t> fname = btr.read_n_bytes(fname_length);
-	_output_filename.assign(fname.begin(), fname.end());
-
-	// leggo il numero di simboli totali
-	uint32_t tot_symbols = btr.read(32);
-
-	// creo un vettore di coppie <lunghezza_simbolo, simbolo>
-	// In realtà legge coppie <simbolo, lunghezza_codice>, non viceversa!!! come fa a funzionare???
-	DepthMap depthmap;
-	for(unsigned i=0; i<tot_symbols; ++i)
-		depthmap.push_back(DepthMapElement(btr.read(8), btr.read(8)));
-
-	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<SeqTriplet> codes;
-	seq_canonical_codes(depthmap, codes);
-
-	// crea una mappa <codice, <simbolo, lunghezza_codice>>
-	map<uint32_t, pair<uint8_t,uint32_t>> codes_map; 
-	for(unsigned i=0; i<codes.size(); ++i)
-		codes_map.insert(pair<uint32_t, pair<uint8_t,uint32_t>>(codes[i].code,pair<uint8_t,uint32_t>(codes[i].symbol, codes[i].code_len)));
-
-	// leggo il file compresso e scrivo l'output
-	while(btr.good()){
-		uint32_t tmp_code = 0;
-		uint32_t tmp_code_len = depthmap[0].first;
-		tmp_code = btr.read(depthmap[0].first);
-		// cerco il codice nella mappa, se non c'è un codice come quello che ho appena letto
-		// o se c'è ma ha lunghezza diversa da quella corrente, leggo un altro bit e lo
-		// aggiungo al codice per cercare di nuovo.
-		// questo modo mi sa che è super inefficiente... sicuramente si può fare di meglio
-		while(codes_map.find(tmp_code) == codes_map.end() || (codes_map.find(tmp_code) != codes_map.end() && tmp_code_len != codes_map[tmp_code].second )){
-			tmp_code = (tmp_code << 1) | (1 & btr.read_bit());
-			tmp_code_len++;
-		}
-
-		// se esco dal while ho trovato un codice, lo leggo, e lo scrivo sul file di output
-		pair<uint32_t,uint32_t> tmp_sym_pair = codes_map[tmp_code];
-		btw.write(tmp_sym_pair.first, 8); 
-	}
-	btw.flush();
-
-}
-
 void SeqHuffman::decompress_chunked (string filename){
 
 	// Check for chunking 

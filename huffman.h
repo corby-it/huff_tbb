@@ -95,16 +95,8 @@ public:
     */
 	void write_on_file(std::string filename);
 
-	// Virtual functions
 
-	//! Decompression
-    /*!
-	  This function fill the _file_out vector with the decompressed version of the _file_in vector
-	  without taking into account memory issues.
-	  This function is implemented in different ways in the subclasses (parallel or sequential).
-      \param filename The input filename.
-    */
-	virtual void decompress(std::string filename) = 0;
+	// Virtual functions
 
 	//! Chunked decompression
     /*!

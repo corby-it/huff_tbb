@@ -71,15 +71,6 @@ public:
       \param filename The current file's name.
     */
 	void compress_chunked(std::string filename);
-	
-	//! Decompress function
-    /*!
-	  This function decompresses the the given file.
-	  WARNING: this function does not use file chunking, it operates on the whole file by completely reading it.
-	  it may cause memory issues with big files.
-      \param filename The current file's name.
-    */
-	void decompress(std::string filename);
 
 	//! Chunked decompress function
     /*!
