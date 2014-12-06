@@ -27,11 +27,11 @@ CodeVector SeqHuffman::create_code_map(vector<uint32_t>& histo){
 	seq_depth_assign(leaves_vect[0], depthmap);
 
 	// ordino la depthmap per profondità 
-	sort(depthmap.begin(), depthmap.end(), seq_depth_compare);
+	sort(depthmap.begin(), depthmap.end(), depth_compare);
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<SeqTriplet> codes;
-	seq_canonical_codes(depthmap, codes);
+	vector<Triplet> codes;
+	canonical_codes(depthmap, codes);
 
 	// crea un vettore <codice, lunghezza_codice> - l'indice i è il simbolo
 	CodeVector codes_map;
@@ -44,44 +44,6 @@ CodeVector SeqHuffman::create_code_map(vector<uint32_t>& histo){
 	return codes_map;
 }
 
-BitWriter SeqHuffman::write_header(CodeVector& codes_map){
-	// utili per ottimizzazione
-	tick_count t0, t1;
-	t0 = tick_count::now();
-	// crea il file di output
-	BitWriter btw(_file_out);
-
-	//scrivo il magic number
-	btw.write(HUF_MAGIC_NUMBER, 32);
-	// scrivo la dimensione del nome del file originale
-	btw.write((uint32_t)_original_filename.size(), 32);
-	// Scrivo il nome del file originale, per recuperarlo in decompressione
-	for(size_t i=0; i<_original_filename.size(); ++i)
-		btw.write(_original_filename[i], 8);
-
-	// scrivo il numero di simboli
-	btw.write((uint32_t)codes_map.num_symbols, 32);
-
-	// creo un'altra struttura ordinata per scrivere i simboli in ordine, dal più corto al più lungo
-	// la depthmap contiene le coppie <lunghezza, simbolo>
-	DepthMap depthmap;
-	for(uint32_t i=0; i<256; ++i){
-		if(codes_map.presence_vector[i]==true){
-			DepthMapElement tmp;
-			tmp.first = codes_map.codes_vector[i].second;
-			tmp.second = i;
-			depthmap.push_back(tmp);
-		}
-	}
-	sort(depthmap.begin(), depthmap.end(), seq_depth_compare);
-
-	// scrivo PRIMA IL SIMBOLO POI LA LUNGHEZZA
-	for(size_t i=0; i<depthmap.size(); ++i){
-		btw.write(depthmap[i].second, 8); // simbolo
-		btw.write(depthmap[i].first, 8);  // lunghezza
-	}
-	return btw;
-}
 
 void SeqHuffman::write_chunks_compressed(std::uint64_t available_ram, std::uint64_t macrochunk_dim, CodeVector codes_map, BitWriter& btw){
 
@@ -247,8 +209,8 @@ void SeqHuffman::decompress_chunked (string filename){
 		depthmap.push_back(DepthMapElement(btr.read(8), btr.read(8)));
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<SeqTriplet> codes;
-	seq_canonical_codes(depthmap, codes);
+	vector<Triplet> codes;
+	canonical_codes(depthmap, codes);
 
 	// crea una mappa <codice, <simbolo, lunghezza_codice>>
 	map<uint32_t, pair<uint8_t,uint32_t>> codes_map; 

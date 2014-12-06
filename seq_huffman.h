@@ -29,21 +29,6 @@ public:
 	  \return returns a map that contains symbols, canonical codes and codes lengths( <symbol, <code, code_len>>).
     */
 	CodeVector create_code_map(std::vector<uint32_t>& histo);
-	
-	//! Write header function
-    /*!
-	  This function writes the header in a compressed file. We used a custom header structured as follows:
-		- 4 bytes: a magic number to identify the fomrat: BCP1 (hex: 42 43 50 01) 
-		- 4 bytes: length of the original filename (m characters)
-		- The m characters (1 byte each) of the original filename
-		- 4 bytes: total number of symbols in the header (n symbols)
-		- n pairs, each one relative to a symbol:
-			-- 1 byte: the symbol itself
-			-- 1 byte: the length of its canonical code
-      \param codes_map The codes map object.
-	  \return Returns the bit writer object used to write the header, it will be used to write all the rest of the file.
-    */
-	BitWriter write_header(CodeVector& codes_map);
 
 	//! Write compressed chunks function
     /*!

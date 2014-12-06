@@ -15,68 +15,12 @@
 //---------------------------------------------------------------------------------------------
 // ----------- DEFINITIONS AND METHODS FOR PARALLEL EXECUTION----------------------------------
 //---------------------------------------------------------------------------------------------
-typedef std::vector<std::pair<unsigned,std::uint8_t>> DepthMap;
-typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
-typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto; // futuro: provare concurrent_vector
+
+//! A histogram implemented using TBB's data types.
+typedef std::vector<tbb::atomic<std::uint32_t>> TBBHisto;
+//! A leaves vector implemented using TBB's concurrent_vector.
 typedef tbb::concurrent_vector<ParHuffNode*> TBBLeavesVector;
 
-//! ParTriplet struct
-/*!
-A struct used to hold the three important values related to the a symbols in the
-huffman compression process
-*/
-struct ParTriplet{
-	//! The symbol itself
-	std::uint8_t symbol;
-	//! The code assigned to the symbol
-	std::uint32_t code;
-	//! The code's length
-	std::uint32_t code_len;
-};
-
-//! Parallel depth compare function.
-/*!
-A function used to compare elements of a depthmap. Used for sorting.
-\param first The first DepthMapElement to be compared.
-\param second The second DepthMapElement to be compared.
-*/
-bool par_depth_compare(DepthMapElement first, DepthMapElement second){
-	// Se le lunghezze dei simboli sono diverse, confronta quelle
-	if(first.first != second.first)
-		return (first.first < second.first);
-	// in caso contrario confronta i simboli
-	else
-		return (first.second < second.second);
-}
-
-//! Parallel canonical codes function.
-/*!
-A function used to compute huffman's canonical codes.
-\param depthmap The input depthmap, a structure containing the symbols and their depth in the tree.
-\param codes The output vector containing the resulting triplets.
-*/
-void par_canonical_codes(DepthMap & depthmap, std::vector<ParTriplet>& codes){
-	ParTriplet curr_code;
-	curr_code.code = 0;
-	curr_code.code_len = depthmap[0].first;
-	curr_code.symbol = depthmap[0].second;
-
-	codes.push_back(curr_code);
-
-	// calcolo i codici canonici
-	for(unsigned i=1; i<depthmap.size(); ++i){
-		if(depthmap[i].first > curr_code.code_len){
-			curr_code.code = (curr_code.code+1)<<(depthmap[i].first - curr_code.code_len);
-		} else {
-			curr_code.code += 1;
-		}
-		curr_code.symbol = depthmap[i].second;
-		curr_code.code_len = depthmap[i].first;
-
-		codes.push_back(curr_code);
-	}
-
-}
 
 //! Parallel creation of the huffman tree function.
 /*!
@@ -99,8 +43,6 @@ void par_create_huffman_tree(TBBHisto histo, TBBLeavesVector& leaves_vect){
 
 	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
 	std::sort(leaves_vect.begin(), leaves_vect.end(), ParHuffNode::leaves_compare);
-
-	//std::cerr << "Arrivo fino a qui: punto 2" << std::endl;
 
 	/* Dal momento che i concurrent vector non supportano pop_back() nè insert,
 	copio i dati in un vector per il pezzo critico, poi li rimetto nel concurrent_vector
@@ -148,7 +90,6 @@ void par_create_huffman_tree(TBBHisto histo, TBBLeavesVector& leaves_vect){
 	leaves_vect.clear();
 	leaves_vect.assign(vec.begin(), vec.end());
 
-	//std::cerr << "Arrivo fino a qui: punto 3" << std::endl;
 }
 
 //! Parallel depth assign function.

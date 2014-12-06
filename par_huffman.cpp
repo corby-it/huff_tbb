@@ -137,53 +137,6 @@ void ParHuffman::write_chunks_compressed(uint64_t available_ram, uint64_t macroc
 	}
 }
 
-BitWriter ParHuffman::write_header(CodeVector& codes_map){
-
-	// utili per ottimizzazione
-	tick_count t0, t1;
-	t0 = tick_count::now();
-	// crea il file di output
-	BitWriter btw(_file_out);
-
-	/* scrivo le lunghezze dei codici all'inizio del file secondo il formato (migliorabile penso...):
-	* - un magic number di 4 byte per contraddistinguere il formato: BCP1 (in hex: 42 43 50 01) 
-	* - 4 byte per la lunghezza del nome del file originale (m)
-	* - seguono gli m caratteri (1 byte l'uno) del nome del file
-	* - 4 byte dicono quanti simboli ci sono (n)
-	* - seguono gli n simboli:
-	*		-- 1 byte per il simbolo, 1 byte per la lunghezza
-	*/
-	//scrivo il magic number
-	btw.write(HUF_MAGIC_NUMBER, 32);
-	// scrivo la dimensione del nome del file originale
-	btw.write((uint32_t)_original_filename.size(), 32);
-	// Scrivo il nome del file originale, per recuperarlo in decompressione
-	for(size_t i=0; i<_original_filename.size(); ++i)
-		btw.write(_original_filename[i], 8);
-
-	// scrivo il numero di simboli
-	btw.write((uint32_t)codes_map.num_symbols, 32);
-	
-	// creo un'altra struttura ordinata per scrivere i simboli in ordine, dal più corto al più lungo
-	// la depthmap contiene le coppie <lunghezza, simbolo>
-	DepthMap depthmap;
-	for(uint32_t i=0; i<256; ++i){
-		if(codes_map.presence_vector[i]==true){
-			DepthMapElement tmp;
-			tmp.first = codes_map.codes_vector[i].second;
-			tmp.second = i;
-			depthmap.push_back(tmp);
-		}
-	}
-	sort(depthmap.begin(), depthmap.end(), par_depth_compare);
-
-	// scrivo PRIMA IL SIMBOLO POI LA LUNGHEZZA
-	for(size_t i=0; i<depthmap.size(); ++i){
-		btw.write(depthmap[i].second, 8); // simbolo
-		btw.write(depthmap[i].first, 8);  // lunghezza
-	}
-	return btw;
-}
 
 void ParHuffman::create_histo(TBBHistoReduce& tbbhr, uint64_t chunk_dim){
 	// Creazione dell'istogramma in parallelo con parallel_reduce
@@ -210,11 +163,11 @@ CodeVector ParHuffman::create_code_map(TBBHistoReduce& tbbhr){
 	par_depth_assign(leaves_vect[0], depthmap);
 
 	// ordino la depthmap per profondità 
-	sort(depthmap.begin(), depthmap.end(), par_depth_compare);
+	sort(depthmap.begin(), depthmap.end(), depth_compare);
 
 	// creo i codici canonici usando la depthmap e li scrivo in codes
-	vector<ParTriplet> codes;
-	par_canonical_codes(depthmap, codes);
+	vector<Triplet> codes;
+	canonical_codes(depthmap, codes);
 
 	// crea una mappa <simbolo, <codice, lunghezza_codice>> per comodità
 	CodeVector codes_map;

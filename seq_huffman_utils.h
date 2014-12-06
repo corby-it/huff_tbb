@@ -12,45 +12,15 @@
 
 // CLASSES
 
-//! SeqTriplet struct
-/*!
-A struct used to hold the three important values related to the a symbols in the
-huffman compression process
-*/
-struct SeqTriplet{
-	//! The symbol itself
-	std::uint8_t symbol;
-	//! The code assigned to the symbol
-	std::uint32_t code;
-	//! The code's length
-	std::uint32_t code_len;
-};
-
 
 typedef std::vector<std::uint32_t> cont_t;
 typedef cont_t::iterator iter_t;
 
 typedef std::vector<SeqHuffNode*> LeavesVector;
 
-typedef std::vector<std::pair<std::uint32_t,std::uint32_t>> DepthMap;
-typedef std::pair<std::uint32_t,std::uint32_t> DepthMapElement;
 
 // METHODS
 
-//! Sequential depth compare function.
-/*!
-A function used to compare elements of a depthmap. Used for sorting.
-\param first The first DepthMapElement to be compared.
-\param second The second DepthMapElement to be compared.
-*/
-bool seq_depth_compare(DepthMapElement first, DepthMapElement second){
-	// Se le lunghezze dei simboli sono diverse, confronta quelle
-	if(first.first != second.first)
-		return (first.first < second.first);
-	// in caso contrario confronta i simboli
-	else
-		return (first.second < second.second);
-}
 
 //! Sequential creation of the huffman tree function.
 /*!
@@ -69,10 +39,7 @@ void seq_create_huffman_tree(cont_t histo, LeavesVector& leaves_vect){
 
 	// ordino le foglie per occorrenze, in modo da partire da quelle con probabilità più bassa
 	std::sort(leaves_vect.begin(), leaves_vect.end(), SeqHuffNode::leaves_compare);
-	//// ---------------solo per debug -------------------
-	//for(size_t i=0; i<leaves_vect.size(); ++i)
-	//	leaves_vect[i]->to_string();
-	//// -------------------------------------------------
+
 
 	// creo l'albero di huffman
 	while(leaves_vect.size() > 1){
@@ -132,32 +99,5 @@ void seq_depth_assign(SeqHuffNode* huff_node, DepthMap & depthmap){
 	}
 }
 
-//! Sequential canonical codes function.
-/*!
-A function used to compute huffman's canonical codes.
-\param depthmap The input depthmap, a structure containing the symbols and their depth in the tree.
-\param codes The output vector containing the resulting triplets.
-*/
-void seq_canonical_codes(DepthMap & depthmap, std::vector<SeqTriplet>& codes){
-	SeqTriplet curr_code;
-	curr_code.code = 0;
-	curr_code.code_len = depthmap[0].first;
-	curr_code.symbol = depthmap[0].second;
-
-	codes.push_back(curr_code);
-
-	// calcolo i codici canonici
-	for(unsigned i=1; i<depthmap.size(); ++i){
-		if(depthmap[i].first > curr_code.code_len){
-			curr_code.code = (curr_code.code+1)<<(depthmap[i].first - curr_code.code_len);
-		} else {
-			curr_code.code += 1;
-		}
-		curr_code.symbol = depthmap[i].second;
-		curr_code.code_len = depthmap[i].first;
-
-		codes.push_back(curr_code);
-	}
-}
 
 #endif /*SEQ_HUFFMAN_UTILS_H*/

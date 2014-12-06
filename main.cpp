@@ -37,7 +37,7 @@ int main (int argc, char *argv[]) {
 
 				ParHuffman par_huff;
 				par_huff.compress_chunked(input_files[num_files]);
-				
+
 			} else { //SEQUENTIAL COMPRESSION
 
 				cout << "Sequential Compressing " << input_files[num_files] << "..." << endl;
@@ -48,8 +48,12 @@ int main (int argc, char *argv[]) {
 		}
 	} else {// DECOMPRESS
 
-		SeqHuffman seq_huff;
-		seq_huff.decompress_chunked(input_files[0]);
+		for(int num_files=0;num_files < input_files.size();++num_files){
+
+			SeqHuffman seq_huff;
+			seq_huff.decompress_chunked(input_files[num_files]);
+
+		}
 
 	}
 
